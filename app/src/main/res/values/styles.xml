@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Widget.Ngopi.TextInput" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="hintEnabled">false</item>
+        <item name="boxBackgroundColor">@color/ngopi_surface</item>
+        <item name="boxStrokeColor">@color/stroke_input</item>
+        <item name="boxStrokeWidth">1dp</item>
+        <item name="boxStrokeWidthFocused">1.5dp</item>
+        <item name="boxCornerRadiusTopStart">11dp</item>
+        <item name="boxCornerRadiusTopEnd">11dp</item>
+        <item name="boxCornerRadiusBottomStart">11dp</item>
+        <item name="boxCornerRadiusBottomEnd">11dp</item>
+        <item name="startIconTint">@color/icon_input</item>
+        <item name="endIconTint">@color/ngopi_muted</item>
+        <item name="prefixTextColor">@color/ngopi_ink</item>
+    </style>
+</resources>

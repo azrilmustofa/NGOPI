@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="20dp"
+    android:paddingTop="8dp"
+    android:paddingEnd="20dp"
+    android:paddingBottom="24dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:letterSpacing="0.11"
+        android:text="@string/invalid_eyebrow"
+        android:textColor="@color/ngopi_green"
+        android:textSize="11sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="7dp"
+        android:text="@string/invalid_title"
+        android:textColor="@color/ngopi_ink"
+        android:textSize="28sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="7dp"
+        android:lineSpacingMultiplier="1.1"
+        android:text="@string/invalid_subtitle"
+        android:textColor="@color/ngopi_muted"
+        android:textSize="13sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="22dp"
+        android:background="@drawable/bg_card_outline"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <ImageView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_qr_scan"
+            app:tint="@color/ngopi_error" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="13dp"
+            android:text="@string/invalid_notice_title"
+            android:textColor="@color/ngopi_ink"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="13dp"
+            android:lineSpacingMultiplier="1.2"
+            android:text="@string/invalid_notice_detail"
+            android:textColor="@color/ngopi_muted"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnRescan"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_marginTop="22dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:text="@string/invalid_rescan"
+        android:textAllCaps="false"
+        android:textColor="@color/ngopi_surface"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:backgroundTint="@color/ngopi_green"
+        app:cornerRadius="13dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnCallCashier"
+        style="@style/Widget.Material3.Button.OutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_marginTop="10dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:text="@string/invalid_call_cashier"
+        android:textAllCaps="false"
+        android:textColor="@color/ngopi_green"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:backgroundTint="@color/ngopi_surface"
+        app:cornerRadius="13dp"
+        app:strokeColor="@color/ngopi_border" />
+</LinearLayout>

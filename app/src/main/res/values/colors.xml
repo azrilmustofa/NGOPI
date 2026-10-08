@@ -2,4 +2,13 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <color name="ngopi_green">#174B35</color>
+    <color name="ngopi_ink">#203329</color>
+    <color name="ngopi_muted">#68766C</color>
+    <color name="ngopi_gold">#D6AD6D</color>
+    <color name="ngopi_background">#F7F4EB</color>
+    <color name="ngopi_surface">#FFFEFA</color>
+    <color name="ngopi_border">#DDE1D7</color>
+    <color name="ngopi_error">#9D463C</color>
 </resources>
