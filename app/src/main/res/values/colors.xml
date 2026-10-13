@@ -2,4 +2,18 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <color name="ngopi_primary">#A85311</color>
+    <color name="ngopi_primary_light">#C06722</color>
+    <color name="ngopi_primary_dark">#8F3E00</color>
+    <color name="ngopi_ink">#522500</color>
+    <color name="ngopi_muted">#85654F</color>
+    <color name="ngopi_accent">#EDA268</color>
+    <color name="ngopi_background">#FFF4EC</color>
+    <color name="ngopi_background_top">#FFDCC2</color>
+    <color name="ngopi_background_mid">#FFEBDC</color>
+    <color name="ngopi_surface">#FFFBF7</color>
+    <color name="ngopi_border">#FFDCC2</color>
+    <color name="ngopi_badge">#FFE6D3</color>
+    <color name="ngopi_error">#9D463C</color>
 </resources>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Widget.Ngopi.TextInput" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="hintEnabled">false</item>
+        <item name="boxBackgroundColor">@color/ngopi_surface</item>
+        <item name="boxStrokeColor">@color/stroke_input</item>
+        <item name="boxStrokeWidth">1dp</item>
+        <item name="boxStrokeWidthFocused">1.5dp</item>
+        <item name="boxCornerRadiusTopStart">11dp</item>
+        <item name="boxCornerRadiusTopEnd">11dp</item>
+        <item name="boxCornerRadiusBottomStart">11dp</item>
+        <item name="boxCornerRadiusBottomEnd">11dp</item>
+        <item name="startIconTint">@color/icon_input</item>
+        <item name="endIconTint">@color/ngopi_muted</item>
+        <item name="prefixTextColor">@color/ngopi_ink</item>
+    </style>
+    <style name="ShapeAppearance.Ngopi.Photo" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">12dp</item>
+    </style>
+    <style name="Widget.Ngopi.BottomNav" parent="Widget.Material3.BottomNavigationView">
+        <item name="android:background">@color/ngopi_surface</item>
+        <item name="backgroundTint">@color/ngopi_surface</item>
+        <item name="elevation">0dp</item>
+        <item name="itemIconTint">@color/nav_item</item>
+        <item name="itemTextColor">@color/nav_item</item>
+        <item name="itemActiveIndicatorStyle">@style/Widget.Ngopi.BottomNav.Indicator</item>
+        <item name="labelVisibilityMode">labeled</item>
+    </style>
+
+    <style name="Widget.Ngopi.BottomNav.Indicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:color">@android:color/transparent</item>
+    </style>
+</resources>
