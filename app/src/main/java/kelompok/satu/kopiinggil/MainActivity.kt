@@ -63,8 +63,14 @@ class MainActivity : AppCompatActivity() {
 
         tvTableNumber = findViewById(R.id.tvTableNumber)
         findViewById<View>(R.id.btnScan).setOnClickListener { startScan() }
-        findViewById<View>(R.id.btnOpenMenu).setOnClickListener {
-            startActivity(Intent(this, MenuActivity::class.java).putExtra(MenuActivity.EXTRA_TABLE, tableNumber))
+        findViewById<View>(R.id.btnOpenMenu).apply {
+            setOnClickListener {
+                startActivity(Intent(this@MainActivity, HomeActivity::class.java).putExtra(HomeActivity.EXTRA_TABLE, tableNumber))
+            }
+            if (SKIP_QR_VALIDATION) {
+                isEnabled = true
+                alpha = 1f
+            }
         }
     }
 
@@ -115,5 +121,8 @@ class MainActivity : AppCompatActivity() {
 
     private companion object {
         const val LOADING_MS = 1500L
+
+        // Sementara true agar "Lihat menu" bisa dibuka tanpa scan QR. Set false untuk mengaktifkan validasi lagi.
+        const val SKIP_QR_VALIDATION = true
     }
 }

@@ -1,0 +1,54 @@
+package kelompok.satu.kopiinggil
+
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.Fragment
+import com.google.android.material.bottomnavigation.BottomNavigationView
+
+// Host untuk tab pelanggan: hanya berisi container fragment dan bottom navigation.
+class HomeActivity : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_home)
+        applyEdgeToEdge(R.id.main)
+
+        if (savedInstanceState == null) {
+            val table = intent.getIntExtra(EXTRA_TABLE, 0)
+            supportFragmentManager.beginTransaction()
+                .setReorderingAllowed(true)
+                .add(R.id.fragmentContainer, MenuFragment.newInstance(table), TAG_MENU)
+                .add(R.id.fragmentContainer, PesananFragment(), TAG_PESANAN)
+                .add(R.id.fragmentContainer, BantuanFragment(), TAG_BANTUAN)
+                .commitNow()
+            showTab(TAG_MENU)
+        }
+
+        findViewById<BottomNavigationView>(R.id.bottomNav).setOnItemSelectedListener { item ->
+            val tag = when (item.itemId) {
+                R.id.nav_menu -> TAG_MENU
+                R.id.nav_orders -> TAG_PESANAN
+                R.id.nav_help -> TAG_BANTUAN
+                else -> return@setOnItemSelectedListener false
+            }
+            showTab(tag)
+            true
+        }
+    }
+
+    // Semua tab tetap hidup (show/hide) supaya pencarian dan filter di Menu tidak hilang saat pindah tab.
+    private fun showTab(tag: String) {
+        val tabs = listOf(TAG_MENU, TAG_PESANAN, TAG_BANTUAN).mapNotNull<String, Fragment> {
+            supportFragmentManager.findFragmentByTag(it)
+        }
+        supportFragmentManager.beginTransaction().setReorderingAllowed(true).apply {
+            tabs.forEach { if (it.tag == tag) show(it) else hide(it) }
+        }.commit()
+    }
+
+    companion object {
+        const val EXTRA_TABLE = "extra_table"
+        private const val TAG_MENU = "tab_menu"
+        private const val TAG_PESANAN = "tab_pesanan"
+        private const val TAG_BANTUAN = "tab_bantuan"
+    }
+}

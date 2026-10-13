@@ -8,12 +8,12 @@ import android.widget.LinearLayout
 import android.widget.ListView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.widget.doAfterTextChanged
-import com.google.android.material.bottomnavigation.BottomNavigationView
+import androidx.fragment.app.Fragment
 
-class MenuActivity : AppCompatActivity() {
+// Tab Lihat menu: header, pencarian, kategori, dan daftar barang (ListView).
+class MenuFragment : Fragment(R.layout.fragment_menu) {
     private lateinit var adapter: BarangAdapter
     private lateinit var tvEmpty: TextView
     private lateinit var lvBarang: ListView
@@ -32,42 +32,36 @@ class MenuActivity : AppCompatActivity() {
         DataBarang("Roti Bakar Coklat", "Roti tebal, coklat, keju", 20000, KategoriBarang.MAKANAN),
     )
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_menu)
-        applyEdgeToEdge(R.id.main)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
-        val table = intent.getIntExtra(EXTRA_TABLE, 0)
-        findViewById<TextView>(R.id.tvTableBadge).text =
+        val table = requireArguments().getInt(ARG_TABLE, 0)
+        view.findViewById<TextView>(R.id.tvTableBadge).text =
             if (table > 0) getString(R.string.menu_table_badge, table) else getString(R.string.table_placeholder)
 
-        adapter = BarangAdapter(this) { barang ->
-            Toast.makeText(this, getString(R.string.menu_added, barang.nama), Toast.LENGTH_SHORT).show()
+        adapter = BarangAdapter(requireContext()) { barang ->
+            Toast.makeText(requireContext(), getString(R.string.menu_added, barang.nama), Toast.LENGTH_SHORT).show()
         }
-        tvEmpty = findViewById(R.id.tvEmpty)
-        lvBarang = findViewById(R.id.lvBarang)
+        tvEmpty = view.findViewById(R.id.tvEmpty)
+        lvBarang = view.findViewById(R.id.lvBarang)
         lvBarang.adapter = adapter
 
-        buildChips(findViewById(R.id.categoryContainer))
-        findViewById<EditText>(R.id.etSearch).doAfterTextChanged {
-            query = it?.toString().orEmpty().trim()
-            render()
-        }
-        render()
-
-        findViewById<BottomNavigationView>(R.id.bottomNav).apply {
-            selectedItemId = R.id.nav_menu
-            setOnItemSelectedListener { item ->
-                // TODO: buka layar Pesanan dan Bantuan setelah tersedia
-                item.itemId == R.id.nav_menu
+        chips.clear()
+        buildChips(view.findViewById(R.id.categoryContainer))
+        view.findViewById<EditText>(R.id.etSearch).apply {
+            setText(query)
+            doAfterTextChanged {
+                query = it?.toString().orEmpty().trim()
+                render()
             }
         }
+        render()
     }
 
     private fun buildChips(container: LinearLayout) {
         val dp = resources.displayMetrics.density
         KategoriBarang.entries.forEach { item ->
-            val chip = TextView(this).apply {
+            val chip = TextView(requireContext()).apply {
                 text = item.label
                 textSize = 12f
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
@@ -92,12 +86,14 @@ class MenuActivity : AppCompatActivity() {
         chips.forEach { (item, chip) ->
             val active = item == kategori
             chip.setBackgroundResource(if (active) R.drawable.bg_chip_active else R.drawable.bg_chip)
-            chip.setTextColor(ContextCompat.getColor(this, if (active) R.color.ngopi_surface else R.color.ngopi_ink))
+            chip.setTextColor(
+                ContextCompat.getColor(requireContext(), if (active) R.color.ngopi_surface else R.color.ngopi_ink),
+            )
         }
         val hasil = semuaBarang.filter {
             (kategori == KategoriBarang.SEMUA || it.kategori == kategori) &&
                 (query.isEmpty() || it.nama.contains(query, true) || it.deskripsi.contains(query, true))
-        }.take(MAX_POPULER)
+        }
         adapter.submit(hasil)
         lvBarang.fitHeightToContent()
         tvEmpty.visibility = if (hasil.isEmpty()) View.VISIBLE else View.GONE
@@ -117,7 +113,10 @@ class MenuActivity : AppCompatActivity() {
     }
 
     companion object {
-        const val EXTRA_TABLE = "extra_table"
-        private const val MAX_POPULER = 2
+        private const val ARG_TABLE = "table"
+
+        fun newInstance(table: Int) = MenuFragment().apply {
+            arguments = Bundle().apply { putInt(ARG_TABLE, table) }
+        }
     }
 }

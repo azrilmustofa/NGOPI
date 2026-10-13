@@ -83,4 +83,8 @@
     <string name="nav_menu">Menu</string>
     <string name="nav_orders">Pesanan</string>
     <string name="nav_help">Bantuan</string>
+    <string name="pesanan_title">Pesananmu</string>
+    <string name="pesanan_empty">Daftar pesanan akan tampil di sini.</string>
+    <string name="bantuan_title">Bantuan</string>
+    <string name="bantuan_empty">Panggil Kasir dan pusat bantuan akan tersedia di sini.</string>
 </resources>
