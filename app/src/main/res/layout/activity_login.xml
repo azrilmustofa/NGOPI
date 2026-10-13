@@ -5,7 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/ngopi_background"
+    android:background="@drawable/bg_screen"
     android:orientation="vertical"
     tools:context=".LoginActivity">
 
@@ -33,7 +33,7 @@
                     android:layout_height="wrap_content"
                     android:letterSpacing="0.04"
                     android:text="@string/brand_name"
-                    android:textColor="@color/ngopi_green"
+                    android:textColor="@color/ngopi_primary"
                     android:textSize="23sp"
                     android:textStyle="bold" />
 
@@ -53,7 +53,7 @@
                 android:layout_marginTop="26dp"
                 android:letterSpacing="0.11"
                 android:text="@string/login_eyebrow"
-                android:textColor="@color/ngopi_green"
+                android:textColor="@color/ngopi_primary"
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
@@ -156,7 +156,7 @@
                     android:text="@string/login_remember"
                     android:textColor="@color/ngopi_ink"
                     android:textSize="12sp"
-                    app:buttonTint="@color/ngopi_green" />
+                    app:buttonTint="@color/ngopi_primary" />
 
                 <TextView
                     android:id="@+id/tvForgot"
@@ -164,7 +164,7 @@
                     android:layout_height="wrap_content"
                     android:padding="4dp"
                     android:text="@string/login_forgot"
-                    android:textColor="@color/ngopi_green"
+                    android:textColor="@color/ngopi_primary"
                     android:textSize="12sp"
                     android:textStyle="bold" />
             </LinearLayout>
@@ -181,7 +181,8 @@
                 android:textColor="@color/ngopi_surface"
                 android:textSize="15sp"
                 android:textStyle="bold"
-                app:backgroundTint="@color/ngopi_green"
+                android:background="@drawable/bg_button_primary"
+                app:backgroundTint="@null"
                 app:cornerRadius="13dp" />
 
             <LinearLayout
@@ -205,7 +206,7 @@
                     android:layout_marginStart="5dp"
                     android:padding="4dp"
                     android:text="@string/login_register"
-                    android:textColor="@color/ngopi_green"
+                    android:textColor="@color/ngopi_primary"
                     android:textSize="13sp"
                     android:textStyle="bold" />
             </LinearLayout>

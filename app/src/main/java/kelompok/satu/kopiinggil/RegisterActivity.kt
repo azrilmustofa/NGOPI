@@ -35,7 +35,13 @@ class RegisterActivity : AppCompatActivity() {
 
         etName.doOnTextChanged { _, _, _, _ -> tilName.error = null }
         etPhone.doOnTextChanged { _, _, _, _ -> tilPhone.error = null }
-        etPhone.doAfterTextChanged { if (it?.startsWith("0") == true) it.delete(0, 1) }
+        etPhone.doAfterTextChanged {
+            val raw = it?.toString().orEmpty()
+            val clean = raw.filter(Char::isDigit).removePrefix("62").trimStart('0')
+            if (clean != raw) {
+                it?.replace(0, it.length, clean)
+            }
+        }
         etEmail.doOnTextChanged { _, _, _, _ -> tilEmail.error = null }
         etPassword.doOnTextChanged { text, _, _, _ ->
             tilPassword.error = null
@@ -47,21 +53,7 @@ class RegisterActivity : AppCompatActivity() {
         findViewById<View>(R.id.tvLogin).setOnClickListener { finish() }
 
         findViewById<View>(R.id.btnRegister).setOnClickListener {
-            val nameOk = etName.text.toString().isNotBlank()
-            val phoneOk = etPhone.text.toString().isValidPhone()
-            val emailOk = etEmail.text.toString().trim().isValidEmail()
-            val passwordOk = etPassword.text.toString().length >= MIN_PASSWORD
-
-            tilName.error = if (nameOk) null else getString(R.string.register_error_name)
-            tilPhone.error = if (phoneOk) null else getString(R.string.register_error_phone)
-            tilEmail.error = if (emailOk) null else getString(R.string.register_error_email)
-            tilPassword.error = if (passwordOk) null else getString(R.string.register_error_password)
-
-            if (!(nameOk && phoneOk && emailOk && passwordOk)) return@setOnClickListener
-            if (!cbConsent.isChecked) {
-                Toast.makeText(this, R.string.register_error_consent, Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
+            // TODO: validasi dan simpan akun setelah database tersedia
             openMainAndClearStack()
         }
     }
@@ -73,7 +65,7 @@ class RegisterActivity : AppCompatActivity() {
         if (password.any { it.isDigit() }) score++
         if (password.any { !it.isLetterOrDigit() }) score++
 
-        val on = ColorStateList.valueOf(ContextCompat.getColor(this, R.color.ngopi_green))
+        val on = ColorStateList.valueOf(ContextCompat.getColor(this, R.color.ngopi_primary))
         val off = ColorStateList.valueOf(ContextCompat.getColor(this, R.color.ngopi_border))
         segments.forEachIndexed { index, view -> view.backgroundTintList = if (index < score) on else off }
 

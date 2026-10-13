@@ -5,7 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/ngopi_background"
+    android:background="@drawable/bg_screen"
     android:orientation="vertical"
     tools:context=".RegisterActivity">
 
@@ -49,7 +49,7 @@
                         android:layout_height="wrap_content"
                         android:letterSpacing="0.04"
                         android:text="@string/brand_name"
-                        android:textColor="@color/ngopi_green"
+                        android:textColor="@color/ngopi_primary"
                         android:textSize="23sp"
                         android:textStyle="bold" />
 
@@ -70,7 +70,7 @@
                 android:layout_marginTop="24dp"
                 android:letterSpacing="0.11"
                 android:text="@string/register_eyebrow"
-                android:textColor="@color/ngopi_green"
+                android:textColor="@color/ngopi_primary"
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
@@ -134,28 +134,53 @@
                 android:textSize="12sp"
                 android:textStyle="bold" />
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilPhone"
-                style="@style/Widget.Ngopi.TextInput"
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="7dp"
-                app:prefixText="@string/register_phone_prefix">
+                android:layout_marginTop="7dp">
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etPhone"
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilPhone"
+                    style="@style/Widget.Ngopi.TextInput"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/register_phone_hint"
-                    android:imeOptions="actionNext"
-                    android:inputType="phone"
-                    android:maxLines="1"
-                    android:paddingTop="16dp"
-                    android:paddingBottom="16dp"
+                    android:layout_height="wrap_content">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etPhone"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:gravity="center_vertical|start"
+                        android:hint="@string/register_phone_hint"
+                        android:imeOptions="actionNext"
+                        android:inputType="number"
+                        android:maxLength="13"
+                        android:maxLines="1"
+                        android:paddingStart="62dp"
+                        android:paddingTop="0dp"
+                        android:paddingEnd="12dp"
+                        android:paddingBottom="0dp"
+                        android:textColor="@color/ngopi_ink"
+                        android:textColorHint="@color/ngopi_muted"
+                        android:textSize="14sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="50dp"
+                    android:layout_marginStart="14dp"
+                    android:gravity="center_vertical"
+                    android:text="@string/register_phone_prefix"
                     android:textColor="@color/ngopi_ink"
-                    android:textColorHint="@color/ngopi_muted"
-                    android:textSize="14sp" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="20dp"
+                    android:layout_marginStart="50dp"
+                    android:layout_marginTop="15dp"
+                    android:background="@color/ngopi_border" />
+            </FrameLayout>
 
             <TextView
                 android:layout_width="wrap_content"
@@ -269,15 +294,27 @@
                 android:textColor="@color/ngopi_muted"
                 android:textSize="11sp" />
 
-            <com.google.android.material.checkbox.MaterialCheckBox
-                android:id="@+id/cbConsent"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="15dp"
-                android:text="@string/register_consent"
-                android:textColor="@color/ngopi_ink"
-                android:textSize="12sp"
-                app:buttonTint="@color/ngopi_green" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/cbConsent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:buttonTint="@color/ngopi_primary" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/register_consent"
+                    android:textColor="@color/ngopi_ink"
+                    android:textSize="12sp" />
+            </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnRegister"
@@ -291,7 +328,8 @@
                 android:textColor="@color/ngopi_surface"
                 android:textSize="15sp"
                 android:textStyle="bold"
-                app:backgroundTint="@color/ngopi_green"
+                android:background="@drawable/bg_button_primary"
+                app:backgroundTint="@null"
                 app:cornerRadius="13dp" />
 
             <LinearLayout
@@ -315,7 +353,7 @@
                     android:layout_marginStart="5dp"
                     android:padding="4dp"
                     android:text="@string/register_login"
-                    android:textColor="@color/ngopi_green"
+                    android:textColor="@color/ngopi_primary"
                     android:textSize="13sp"
                     android:textStyle="bold" />
             </LinearLayout>

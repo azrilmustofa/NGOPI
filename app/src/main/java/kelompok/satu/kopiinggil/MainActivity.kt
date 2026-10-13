@@ -1,11 +1,20 @@
 package kelompok.satu.kopiinggil
 
+import android.app.Dialog
+import android.content.Intent
+import android.content.res.ColorStateList
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.util.TypedValue
 import android.view.View
+import android.view.Window
+import android.widget.FrameLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.journeyapps.barcodescanner.ScanContract
@@ -13,21 +22,31 @@ import com.journeyapps.barcodescanner.ScanOptions
 
 class MainActivity : AppCompatActivity() {
     private lateinit var tvTableNumber: TextView
+    private var loadingDialog: Dialog? = null
+    private var tableNumber = 0
 
     private val scanLauncher = registerForActivityResult(ScanContract()) { result ->
         val content = result.contents ?: return@registerForActivityResult
         val table = parseTableNumber(content)
-        if (table == null) {
-            findViewById<View>(R.id.main).postDelayed({
-                if (!isFinishing && !supportFragmentManager.isStateSaved) {
-                    InvalidQrSheet().show(supportFragmentManager, InvalidQrSheet.TAG)
+        showLoading()
+        findViewById<View>(R.id.main).postDelayed({
+            hideLoading()
+            if (isFinishing) return@postDelayed
+            if (table == null) {
+                if (!supportFragmentManager.isStateSaved) {
+                    InvalidQrFragment().show(supportFragmentManager, InvalidQrFragment.TAG)
                 }
-            }, SHEET_DELAY_MS)
-        } else {
-            tvTableNumber.setTextSize(TypedValue.COMPLEX_UNIT_SP, 52f)
-            tvTableNumber.text = String.format("%02d", table)
-            findViewById<View>(R.id.ivTableVerified).visibility = View.VISIBLE
-        }
+            } else {
+                tvTableNumber.setTextSize(TypedValue.COMPLEX_UNIT_SP, 52f)
+                tableNumber = table
+                tvTableNumber.text = String.format("%02d", table)
+                findViewById<View>(R.id.ivTableVerified).visibility = View.VISIBLE
+                findViewById<View>(R.id.btnOpenMenu).apply {
+                    isEnabled = true
+                    alpha = 1f
+                }
+            }
+        }, LOADING_MS)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,10 +59,40 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        supportFragmentManager.setFragmentResultListener(InvalidQrSheet.RESULT_KEY, this) { _, _ -> startScan() }
+        supportFragmentManager.setFragmentResultListener(InvalidQrFragment.RESULT_KEY, this) { _, _ -> startScan() }
 
         tvTableNumber = findViewById(R.id.tvTableNumber)
         findViewById<View>(R.id.btnScan).setOnClickListener { startScan() }
+        findViewById<View>(R.id.btnOpenMenu).setOnClickListener {
+            startActivity(Intent(this, MenuActivity::class.java).putExtra(MenuActivity.EXTRA_TABLE, tableNumber))
+        }
+    }
+
+    private fun showLoading() {
+        if (loadingDialog?.isShowing == true) return
+        val progress = ProgressBar(this).apply {
+            indeterminateTintList = ColorStateList.valueOf(ContextCompat.getColor(context, R.color.ngopi_primary))
+        }
+        loadingDialog = Dialog(this).apply {
+            requestWindowFeature(Window.FEATURE_NO_TITLE)
+            setContentView(FrameLayout(context).apply {
+                setPadding(48, 48, 48, 48)
+                addView(progress)
+            })
+            setCancelable(false)
+            window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            show()
+        }
+    }
+
+    private fun hideLoading() {
+        loadingDialog?.dismiss()
+        loadingDialog = null
+    }
+
+    override fun onDestroy() {
+        hideLoading()
+        super.onDestroy()
     }
 
     private fun startScan() {
@@ -65,6 +114,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private companion object {
-        const val SHEET_DELAY_MS = 350L
+        const val LOADING_MS = 1500L
     }
 }

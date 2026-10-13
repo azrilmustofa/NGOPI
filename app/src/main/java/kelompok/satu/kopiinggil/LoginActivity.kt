@@ -23,16 +23,8 @@ class LoginActivity : AppCompatActivity() {
         etPassword.doOnTextChanged { _, _, _, _ -> tilPassword.error = null }
 
         findViewById<android.view.View>(R.id.btnLogin).setOnClickListener {
-            val identifier = etIdentifier.text.toString().trim()
-            val password = etPassword.text.toString()
-
-            val identifierOk = identifier.isValidEmail() || identifier.isValidPhone()
-            tilIdentifier.error = if (identifierOk) null else getString(R.string.login_error_identifier)
-            tilPassword.error = if (password.isNotEmpty()) null else getString(R.string.login_error_password)
-
-            if (identifierOk && password.isNotEmpty()) {
-                openMainAndClearStack()
-            }
+            // TODO: validasi akun setelah database tersedia
+            openMainAndClearStack()
         }
 
         findViewById<android.view.View>(R.id.tvRegister).setOnClickListener {

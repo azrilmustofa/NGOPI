@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         android:letterSpacing="0.11"
         android:text="@string/invalid_eyebrow"
-        android:textColor="@color/ngopi_green"
+        android:textColor="@color/ngopi_primary"
         android:textSize="11sp"
         android:textStyle="bold" />
 
@@ -82,7 +82,8 @@
         android:textColor="@color/ngopi_surface"
         android:textSize="15sp"
         android:textStyle="bold"
-        app:backgroundTint="@color/ngopi_green"
+        android:background="@drawable/bg_button_primary"
+        app:backgroundTint="@null"
         app:cornerRadius="13dp" />
 
     <com.google.android.material.button.MaterialButton
@@ -95,7 +96,7 @@
         android:insetBottom="0dp"
         android:text="@string/invalid_call_cashier"
         android:textAllCaps="false"
-        android:textColor="@color/ngopi_green"
+        android:textColor="@color/ngopi_primary"
         android:textSize="15sp"
         android:textStyle="bold"
         app:backgroundTint="@color/ngopi_surface"

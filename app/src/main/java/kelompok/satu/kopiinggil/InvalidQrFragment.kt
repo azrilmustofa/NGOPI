@@ -9,9 +9,9 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
-class InvalidQrSheet : BottomSheetDialogFragment() {
+class InvalidQrFragment : BottomSheetDialogFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
-        inflater.inflate(R.layout.sheet_qr_invalid, container, false)
+        inflater.inflate(R.layout.fragment_qr_invalid, container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -28,7 +28,7 @@ class InvalidQrSheet : BottomSheetDialogFragment() {
     }
 
     companion object {
-        const val TAG = "InvalidQrSheet"
+        const val TAG = "InvalidQrFragment"
         const val RESULT_KEY = "invalid_qr_rescan"
     }
 }

@@ -5,7 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/ngopi_background"
+    android:background="@drawable/bg_screen"
     android:orientation="vertical"
     tools:context=".MainActivity">
 
@@ -40,7 +40,7 @@
                         android:layout_height="wrap_content"
                         android:letterSpacing="0.04"
                         android:text="@string/brand_name"
-                        android:textColor="@color/ngopi_green"
+                        android:textColor="@color/ngopi_primary"
                         android:textSize="23sp"
                         android:textStyle="bold" />
 
@@ -75,7 +75,7 @@
                     android:layout_height="wrap_content"
                     android:letterSpacing="0.11"
                     android:text="@string/welcome_label"
-                    android:textColor="@color/ngopi_green"
+                    android:textColor="@color/ngopi_primary"
                     android:textSize="11sp"
                     android:textStyle="bold" />
 
@@ -119,7 +119,7 @@
                         android:layout_weight="1"
                         android:letterSpacing="0.09"
                         android:text="@string/table_label"
-                        android:textColor="@color/ngopi_gold"
+                        android:textColor="@color/ngopi_accent"
                         android:textSize="11sp"
                         android:textStyle="bold" />
 
@@ -171,7 +171,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/step_1_number"
-                    android:textColor="@color/ngopi_green"
+                    android:textColor="@color/ngopi_primary"
                     android:textSize="15sp"
                     android:textStyle="bold" />
 
@@ -196,7 +196,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/step_2_number"
-                    android:textColor="@color/ngopi_green"
+                    android:textColor="@color/ngopi_primary"
                     android:textSize="15sp"
                     android:textStyle="bold" />
 
@@ -221,7 +221,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/step_3_number"
-                    android:textColor="@color/ngopi_green"
+                    android:textColor="@color/ngopi_primary"
                     android:textSize="15sp"
                     android:textStyle="bold" />
 
@@ -253,8 +253,11 @@
         android:paddingBottom="24dp">
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnOpenMenu"
             android:layout_width="match_parent"
             android:layout_height="52dp"
+            android:alpha="0.4"
+            android:enabled="false"
             android:insetTop="0dp"
             android:insetBottom="0dp"
             android:text="@string/open_menu"
@@ -262,7 +265,8 @@
             android:textColor="@color/ngopi_surface"
             android:textSize="15sp"
             android:textStyle="bold"
-            app:backgroundTint="@color/ngopi_green"
+            android:background="@drawable/bg_button_primary"
+            app:backgroundTint="@null"
             app:cornerRadius="13dp" />
     </LinearLayout>
 </LinearLayout>

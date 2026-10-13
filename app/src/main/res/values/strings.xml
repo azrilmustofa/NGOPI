@@ -69,4 +69,18 @@
     <string name="invalid_rescan">Scan ulang QR</string>
     <string name="invalid_call_cashier">Panggil Kasir</string>
     <string name="invalid_call_cashier_todo">Fitur panggil Kasir belum dibuat</string>
+    <string name="menu_table_badge">Meja %1$02d</string>
+    <string name="menu_title">Mau ngopi apa?</string>
+    <string name="menu_description">Pesan dari meja, bayar tanpa antre. Kami siapkan setelah pembayaran terverifikasi.</string>
+    <string name="menu_featured_label">PILIHAN HARI INI</string>
+    <string name="menu_featured_title">Kopi Susu Gula Aren</string>
+    <string name="menu_featured_price">Mulai Rp24.000 →</string>
+    <string name="menu_search_hint">Cari kopi atau makanan</string>
+    <string name="menu_section_popular">Sering dipesan</string>
+    <string name="menu_empty">Menu tidak ditemukan</string>
+    <string name="menu_added">%1$s ditambahkan</string>
+    <string name="menu_add_cd">Tambah ke pesanan</string>
+    <string name="nav_menu">Menu</string>
+    <string name="nav_orders">Pesanan</string>
+    <string name="nav_help">Bantuan</string>
 </resources>
