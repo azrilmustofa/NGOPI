@@ -87,4 +87,68 @@
     <string name="pesanan_empty">Daftar pesanan akan tampil di sini.</string>
     <string name="bantuan_title">Bantuan</string>
     <string name="bantuan_empty">Panggil Kasir dan pusat bantuan akan tersedia di sini.</string>
+
+    <!-- Detail Produk -->
+    <string name="detail_title">Detail menu</string>
+    <string name="detail_milk_title">Pilihan susu</string>
+    <string name="detail_milk_required">Pilih 1 · Wajib</string>
+    <string name="detail_milk_fresh">Susu segar</string>
+    <string name="detail_milk_fresh_price">Termasuk</string>
+    <string name="detail_milk_oat">Oat milk</string>
+    <string name="detail_milk_oat_price">+ Rp6.000</string>
+    <string name="detail_notes_label">Catatan untuk barista · Opsional</string>
+    <string name="detail_notes_hint">Contoh: sedikit es</string>
+    <string name="detail_qty_title">Jumlah</string>
+    <string name="detail_total_label">Total item</string>
+    <string name="detail_btn_add">Tambah ke keranjang</string>
+
+    <!-- Keranjang -->
+    <string name="cart_title">Keranjangmu</string>
+    <string name="cart_subtitle">Periksa pilihan sebelum lanjut. Harga final dihitung ulang saat checkout.</string>
+    <string name="cart_add_more">Tambah menu lain</string>
+    <string name="cart_subtotal">Subtotal</string>
+    <string name="cart_tax_service">Pajak &amp; layanan</string>
+    <string name="cart_tax_calculated">Dihitung saat checkout</string>
+    <string name="cart_estimate_note">Estimasi dapat berubah jika harga atau stok diperbarui.</string>
+    <string name="cart_estimate_subtotal">Estimasi subtotal</string>
+    <string name="cart_btn_checkout">Lanjut ke checkout</string>
+
+    <!-- Checkout -->
+    <string name="checkout_step">LANGKAH 2 DARI 3</string>
+    <string name="checkout_title">Konfirmasi pesanan</string>
+    <string name="checkout_summary_title">Ringkasan dari sistem</string>
+    <string name="checkout_tax">Pajak 10%</string>
+    <string name="checkout_total">Total</string>
+    <string name="checkout_cust_heading">Untuk struk &amp; bantuan</string>
+    <string name="checkout_name_label">Nama pemesan</string>
+    <string name="checkout_name_hint">Nama kamu</string>
+    <string name="checkout_wa_label">Nomor WhatsApp</string>
+    <string name="checkout_consent_wa">Saya setuju menerima pesan transaksi dan struk melalui WhatsApp.</string>
+    <string name="checkout_consent_promo">Saya ingin menerima promo (opsional).</string>
+    <string name="checkout_btn_pay">Lanjut bayar</string>
+
+    <!-- Metode Pembayaran -->
+    <string name="payment_step">LANGKAH 3 DARI 3</string>
+    <string name="payment_title">Pilih cara bayar</string>
+    <string name="payment_methods_heading">Metode tersedia</string>
+    <string name="payment_qris">QRIS</string>
+    <string name="payment_qris_desc">Scan lewat aplikasi pembayaran</string>
+    <string name="payment_va">Virtual account</string>
+    <string name="payment_va_desc">Transfer melalui bank pilihan</string>
+    <string name="payment_ewallet">E-wallet</string>
+    <string name="payment_ewallet_desc">Bayar dengan dompet digital</string>
+    <string name="payment_provider_note">Pembayaran diproses oleh Midtrans. Status lunas ditentukan oleh verifikasi server, bukan layar kembali.</string>
+    <string name="payment_btn_back">Kembali ke checkout</string>
+
+    <!-- Status Pesanan -->
+    <string name="status_tracking_title">Perjalanan pesanan</string>
+    <string name="status_paid_badge">Sudah dibayar</string>
+    <string name="status_step_payment">Pembayaran diterima</string>
+    <string name="status_step_order">Pesanan diterima</string>
+    <string name="status_step_brewing">Sedang diracik</string>
+    <string name="status_step_ready">Siap diantar</string>
+    <string name="status_step_done">Selesai</string>
+    <string name="status_receipt_note">Struk WhatsApp dikirim terpisah. Status pesanan tetap dapat dipantau di sini.</string>
+    <string name="status_btn_order_again">Pesan lagi</string>
+    <string name="status_btn_call_cashier">Panggil Kasir</string>
 </resources>
