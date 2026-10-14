@@ -17,8 +17,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.lifecycleScope
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
+import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private lateinit var tvTableNumber: TextView
@@ -27,26 +30,28 @@ class MainActivity : AppCompatActivity() {
 
     private val scanLauncher = registerForActivityResult(ScanContract()) { result ->
         val content = result.contents ?: return@registerForActivityResult
-        val table = parseTableNumber(content)
         showLoading()
-        findViewById<View>(R.id.main).postDelayed({
+        lifecycleScope.launch {
+            val table = validateTableWithSupabase(content)
             hideLoading()
-            if (isFinishing) return@postDelayed
-            if (table == null) {
+            if (isFinishing) return@launch
+            if (table == null || !table.isActive) {
                 if (!supportFragmentManager.isStateSaved) {
                     InvalidQrFragment().show(supportFragmentManager, InvalidQrFragment.TAG)
                 }
             } else {
+                tableNumber = table.tableNumber
                 tvTableNumber.setTextSize(TypedValue.COMPLEX_UNIT_SP, 52f)
-                tableNumber = table
-                tvTableNumber.text = String.format("%02d", table)
+                tvTableNumber.text = String.format(java.util.Locale.getDefault(), "%02d", tableNumber)
                 findViewById<View>(R.id.ivTableVerified).visibility = View.VISIBLE
                 findViewById<View>(R.id.btnOpenMenu).apply {
                     isEnabled = true
                     alpha = 1f
                 }
+                // Otomatis berpindah ke HomeActivity (MenuFragment) dengan membawa nomor meja yang terverifikasi
+                startActivity(Intent(this@MainActivity, HomeActivity::class.java).putExtra(HomeActivity.EXTRA_TABLE, tableNumber))
             }
-        }, LOADING_MS)
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -111,18 +116,83 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    // Menerima isi QR seperti "7", "07", "Meja 7", "meja-07", atau URL berisi ?table=7 / ?meja=7.
-    private fun parseTableNumber(content: String): Int? {
-        val text = content.trim()
-        val labelled = Regex("(?i)(?:table|meja|no)[^0-9]{0,3}(\\d{1,3})").find(text)
-        val digits = labelled?.groupValues?.get(1) ?: text.takeIf { it.matches(Regex("\\d{1,3}")) }
-        return digits?.toIntOrNull()?.takeIf { it > 0 }
+    private suspend fun validateTableWithSupabase(content: String): CafeTable? {
+        return try {
+            val text = content.trim().uppercase()
+            val digits = Regex("\\d+").find(text)?.value?.toIntOrNull()
+            val searchId = if (text.startsWith("TBL-")) text else {
+                digits?.let { "TBL-%02d".format(it) } ?: text
+            }
+
+            android.util.Log.d("MainActivity", "Scanning QR raw: '$content' -> Search ID: '$searchId'")
+
+            // Fetch seluruh data dari tabel cafe_table
+            val allTables = supabase.postgrest["cafe_table"]
+                .select()
+                .decodeList<CafeTable>()
+
+            android.util.Log.d("MainActivity", "Total meja didapatkan dari Supabase: ${allTables.size}")
+
+            // Jika 0 data, berarti RLS (Row Level Security) di Supabase memblokir query publik
+            if (allTables.isEmpty()) {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    android.widget.Toast.makeText(
+                        this@MainActivity,
+                        "Supabase mengembalikan 0 data! RLS (Row Level Security) memblokir baca data. Matikan RLS atau buat Policy SELECT.",
+                        android.widget.Toast.LENGTH_LONG
+                    ).show()
+                }
+                return null
+            }
+
+            // Pencocokan ID fleksibel
+            val matchedTable = allTables.firstOrNull { table ->
+                table.id.equals(searchId, ignoreCase = true) ||
+                table.id.equals(text, ignoreCase = true) ||
+                table.label.equals(content.trim(), ignoreCase = true) ||
+                (digits != null && table.tableNumber == digits)
+            }
+
+            if (matchedTable == null) {
+                val availableIds = allTables.joinToString { it.id }
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    android.widget.Toast.makeText(
+                        this@MainActivity,
+                        "ID '$searchId' tidak ditemukan. ID yang ada di DB: [$availableIds]",
+                        android.widget.Toast.LENGTH_LONG
+                    ).show()
+                }
+                return null
+            }
+
+            android.util.Log.d("MainActivity", "Meja ditemukan dari Supabase: id=${matchedTable.id}, label=${matchedTable.label}, isActive=${matchedTable.isActive}")
+
+            if (!matchedTable.isActive) {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    android.widget.Toast.makeText(
+                        this@MainActivity,
+                        "Meja '${matchedTable.label}' ($searchId) sedang tidak aktif.",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+
+            matchedTable
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Error query Supabase cafe_table", e)
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                android.widget.Toast.makeText(
+                    this@MainActivity,
+                    "Error Supabase: ${e.localizedMessage}",
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
+            }
+            null
+        }
     }
 
     private companion object {
-        const val LOADING_MS = 1500L
-
-        // Sementara true agar "Lihat menu" bisa dibuka tanpa scan QR. Set false untuk mengaktifkan validasi lagi.
-        const val SKIP_QR_VALIDATION = true
+        // Set false untuk mengaktifkan validasi QR melalui Supabase
+        const val SKIP_QR_VALIDATION = false
     }
 }
