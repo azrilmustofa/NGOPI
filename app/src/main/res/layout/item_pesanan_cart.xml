@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="10dp"
+    android:background="@drawable/bg_card_outline"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvCartItemNama"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/ngopi_ink"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                tools:text="Es Kopi Susu" />
+
+            <TextView
+                android:id="@+id/tvCartItemHargaUnit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="@color/ngopi_muted"
+                android:textSize="12sp"
+                tools:text="Rp24.000 / porsi" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvCartItemTotalHarga"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/ngopi_primary"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            tools:text="Rp24.000" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
+        android:background="@color/ngopi_border" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Jumlah"
+            android:textColor="@color/ngopi_muted"
+            android:textSize="12sp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/btnCartItemMinus"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:background="@drawable/bg_chip"
+                android:contentDescription="Kurangi"
+                android:padding="6dp"
+                android:src="@drawable/ic_minus"
+                app:tint="@color/ngopi_ink" />
+
+            <TextView
+                android:id="@+id/tvCartItemQty"
+                android:layout_width="32dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textColor="@color/ngopi_ink"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                tools:text="1" />
+
+            <ImageView
+                android:id="@+id/btnCartItemPlus"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:background="@drawable/bg_chip"
+                android:contentDescription="Tambah"
+                android:padding="6dp"
+                android:src="@drawable/ic_plus"
+                app:tint="@color/ngopi_ink" />
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>

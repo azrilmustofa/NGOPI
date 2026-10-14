@@ -12,8 +12,10 @@ class HomeActivity : AppCompatActivity() {
         setContentView(R.layout.activity_home)
         applyEdgeToEdge(R.id.main)
 
+        val table = intent.getIntExtra(EXTRA_TABLE, 0)
+        CartManager.tableNumber = table
+
         if (savedInstanceState == null) {
-            val table = intent.getIntExtra(EXTRA_TABLE, 0)
             supportFragmentManager.beginTransaction()
                 .setReorderingAllowed(true)
                 .add(R.id.fragmentContainer, MenuFragment.newInstance(table), TAG_MENU)
@@ -33,6 +35,10 @@ class HomeActivity : AppCompatActivity() {
             showTab(tag)
             true
         }
+    }
+
+    fun selectMenuTab() {
+        findViewById<BottomNavigationView>(R.id.bottomNav).selectedItemId = R.id.nav_menu
     }
 
     // Semua tab tetap hidup (show/hide) supaya pencarian dan filter di Menu tidak hilang saat pindah tab.

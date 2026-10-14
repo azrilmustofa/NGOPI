@@ -29,7 +29,7 @@
                 android:id="@+id/tvPesananTableBadge"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="MEJA 07"
+                android:text="MEJA --"
                 android:textColor="@color/ngopi_primary"
                 android:textSize="11sp"
                 android:textStyle="bold" />
@@ -49,16 +49,178 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:lineSpacingMultiplier="1.1"
-            android:text="Lihat pesanan dari sesi ini. Pesanan lama dari sesi anonim yang hilang perlu bantuan Kasir."
+            android:text="Lihat item yang kamu pilih dan riwayat pesanan sesi ini."
             android:textColor="@color/ngopi_muted"
             android:textSize="13sp" />
 
-        <!-- Orders container -->
+        <!-- ACTIVE CART SECTION -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="Pesanan Saat Ini"
+            android:textColor="@color/ngopi_ink"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <!-- Empty Cart State -->
+        <LinearLayout
+            android:id="@+id/llCartEmptyState"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_card_outline"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="24dp"
+            android:visibility="visible">
+
+            <ImageView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_coffee"
+                app:tint="@color/ngopi_muted" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Belum Ada Pesanan"
+                android:textColor="@color/ngopi_ink"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="center"
+                android:text="Pilih menu favoritmu dari tab Menu untuk mulai memesan."
+                android:textColor="@color/ngopi_muted"
+                android:textSize="12sp" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnGoToMenu"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_button_primary"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:text="Lihat Menu"
+                android:textColor="@color/white"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Active Cart Container -->
+        <LinearLayout
+            android:id="@+id/llActiveCartContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <!-- Container for dynamic item views -->
+            <LinearLayout
+                android:id="@+id/llCartItemsList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <!-- Summary Card -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/bg_card_outline"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tvCartTotalItems"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textColor="@color/ngopi_ink"
+                        android:textSize="14sp"
+                        tools:text="Total 2 Item" />
+
+                    <TextView
+                        android:id="@+id/tvCartTotalPrice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/ngopi_primary"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        tools:text="Rp48.000" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="12dp"
+                    android:background="@color/ngopi_border" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <androidx.appcompat.widget.AppCompatButton
+                        android:id="@+id/btnClearCart"
+                        android:layout_width="0dp"
+                        android:layout_height="42dp"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_chip"
+                        android:text="Kosongkan"
+                        android:textColor="@color/ngopi_muted"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <androidx.appcompat.widget.AppCompatButton
+                        android:id="@+id/btnCheckoutCart"
+                        android:layout_width="0dp"
+                        android:layout_height="42dp"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="2"
+                        android:background="@drawable/bg_button_primary"
+                        android:text="Proses Pesanan"
+                        android:textColor="@color/white"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- ORDER HISTORY SECTION -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:text="Riwayat Pesanan"
+            android:textColor="@color/ngopi_ink"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <!-- Orders list container -->
         <LinearLayout
             android:id="@+id/llOrdersList"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="10dp"
             android:orientation="vertical">
 
             <!-- Order Item 1 -->
@@ -103,83 +265,6 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
                     android:text="Hari ini · 09.41 · Rp57.200"
-                    android:textColor="@color/ngopi_muted"
-                    android:textSize="12sp" />
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginTop="12dp"
-                    android:layout_marginBottom="12dp"
-                    android:background="@color/ngopi_border" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Lihat detail"
-                        android:textColor="@color/ngopi_primary"
-                        android:textSize="13sp"
-                        android:textStyle="bold" />
-
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_arrow_forward"
-                        app:tint="@color/ngopi_primary" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- Order Item 2 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:background="@drawable/bg_card_outline"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="#NG-2838"
-                        android:textColor="@color/ngopi_ink"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/bg_card_green"
-                        android:paddingStart="8dp"
-                        android:paddingTop="3dp"
-                        android:paddingEnd="8dp"
-                        android:paddingBottom="3dp"
-                        android:text="Menunggu bayar"
-                        android:textColor="@color/ngopi_ink"
-                        android:textSize="11sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="Hari ini · 08.55 · Rp24.000"
                     android:textColor="@color/ngopi_muted"
                     android:textSize="12sp" />
 

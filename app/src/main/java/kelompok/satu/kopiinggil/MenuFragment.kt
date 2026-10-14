@@ -36,6 +36,7 @@ class MenuFragment : Fragment(R.layout.fragment_menu) {
             if (table > 0) getString(R.string.menu_table_badge, table) else getString(R.string.table_placeholder)
 
         adapter = BarangAdapter(requireContext()) { barang ->
+            CartManager.addItem(barang)
             Toast.makeText(requireContext(), getString(R.string.menu_added, barang.nama), Toast.LENGTH_SHORT).show()
         }
         tvEmpty = view.findViewById(R.id.tvEmpty)
