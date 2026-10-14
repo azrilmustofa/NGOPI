@@ -101,6 +101,7 @@ class RegisterActivity : AppCompatActivity() {
                             put("phone", phone)
                         }
                     }
+                    setRememberMe(true)
                     Toast.makeText(this@RegisterActivity, "Pendaftaran berhasil!", Toast.LENGTH_SHORT).show()
                     openMainAndClearStack()
                 } catch (e: Exception) {

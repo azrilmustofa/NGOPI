@@ -1,5 +1,6 @@
 package kelompok.satu.kopiinggil
 
+import android.content.Context
 import android.content.Intent
 import android.util.Patterns
 import androidx.activity.enableEdgeToEdge
@@ -26,3 +27,13 @@ fun AppCompatActivity.openMainAndClearStack() {
 fun String.isValidEmail(): Boolean = Patterns.EMAIL_ADDRESS.matcher(this).matches()
 
 fun String.isValidPhone(): Boolean = replace(Regex("[\\s-]"), "").matches(Regex("\\d{9,13}"))
+
+private const val AUTH_PREFS = "auth_prefs"
+private const val KEY_REMEMBER_ME = "remember_me"
+
+fun Context.isRememberMe(): Boolean =
+    getSharedPreferences(AUTH_PREFS, Context.MODE_PRIVATE).getBoolean(KEY_REMEMBER_ME, false)
+
+fun Context.setRememberMe(value: Boolean) {
+    getSharedPreferences(AUTH_PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_REMEMBER_ME, value).apply()
+}
