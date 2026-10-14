@@ -11,6 +11,9 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import io.github.jan.supabase.postgrest.from
+import kotlinx.coroutines.launch
 
 // Tab Lihat menu: header, pencarian, kategori, dan daftar barang (ListView).
 class MenuFragment : Fragment(R.layout.fragment_menu) {
@@ -21,16 +24,7 @@ class MenuFragment : Fragment(R.layout.fragment_menu) {
     private var kategori = KategoriBarang.SEMUA
     private var query = ""
 
-    // Data sementara, nanti diganti dari database.
-    private val semuaBarang = listOf(
-        DataBarang("Es Kopi Susu", "Espresso, susu, gula aren", 24000, KategoriBarang.KOPI),
-        DataBarang("Cappuccino", "Espresso, susu steamed", 28000, KategoriBarang.KOPI),
-        DataBarang("Americano", "Espresso, air", 20000, KategoriBarang.KOPI),
-        DataBarang("Matcha Latte", "Matcha, susu", 29000, KategoriBarang.NON_KOPI),
-        DataBarang("Coklat Panas", "Coklat, susu steamed", 25000, KategoriBarang.NON_KOPI),
-        DataBarang("Croissant", "Mentega, dipanggang hangat", 22000, KategoriBarang.MAKANAN),
-        DataBarang("Roti Bakar Coklat", "Roti tebal, coklat, keju", 20000, KategoriBarang.MAKANAN),
-    )
+    private var semuaBarang: List<DataBarang> = emptyList()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -56,6 +50,21 @@ class MenuFragment : Fragment(R.layout.fragment_menu) {
             }
         }
         render()
+        loadMenuFromSupabase()
+    }
+
+    private fun loadMenuFromSupabase() {
+        lifecycleScope.launch {
+            try {
+                val data = supabase.from("menu_item").select().decodeList<DataBarang>()
+                if (data.isNotEmpty()) {
+                    semuaBarang = data.filter { it.isActive }
+                    render()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Gagal memuat: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun buildChips(container: LinearLayout) {
