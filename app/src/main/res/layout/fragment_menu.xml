@@ -26,33 +26,8 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
+                android:gravity="center_vertical|end"
                 android:orientation="horizontal">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:letterSpacing="0.04"
-                        android:text="@string/brand_name"
-                        android:textColor="@color/ngopi_primary"
-                        android:textSize="21sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:letterSpacing="0.12"
-                        android:text="@string/brand_tagline"
-                        android:textColor="@color/ngopi_muted"
-                        android:textSize="8sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="wrap_content"
@@ -198,27 +173,37 @@
                     android:textSize="13sp" />
             </LinearLayout>
 
-            <HorizontalScrollView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:scrollbars="none">
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-                <LinearLayout
-                    android:id="@+id/categoryContainer"
-                    android:layout_width="wrap_content"
+                <HorizontalScrollView
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal" />
-            </HorizontalScrollView>
+                    android:layout_weight="1"
+                    android:scrollbars="none">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:text="@string/menu_section_popular"
-                android:textColor="@color/ngopi_ink"
-                android:textSize="18sp"
-                android:textStyle="bold" />
+                    <LinearLayout
+                        android:id="@+id/categoryContainer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal" />
+                </HorizontalScrollView>
+
+                <ImageView
+                    android:id="@+id/btnSort"
+                    android:layout_width="47dp"
+                    android:layout_height="33dp"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_chip"
+                    android:contentDescription="@string/menu_sort_cd"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_sort"
+                    app:tint="@color/ngopi_ink" />
+            </LinearLayout>
         </LinearLayout>
 
         <ListView

@@ -2,6 +2,7 @@ package kelompok.satu.kopiinggil
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -42,9 +43,27 @@ data class DataBarang(
     val isActive: Boolean = true,
     @SerialName("created_at")
     val createdAt: String? = null,
+    // Total porsi yang pernah dipesan, diisi dari view menu_terlaris (bukan kolom menu_item).
+    @Transient
+    val terjual: Int = 0,
 ) {
     val kategori: KategoriBarang
         get() = KategoriBarang.fromCategoryId(categoryId)
+}
+
+// Satu baris view menu_terlaris: jumlah porsi yang dipesan per menu (jumlah quantity di order_item).
+@Serializable
+data class MenuTerlaris(
+    @SerialName("menu_item_id")
+    val menuItemId: String,
+    @SerialName("total_dipesan")
+    val totalDipesan: Int = 0,
+)
+
+enum class UrutBarang(val labelRes: Int, val descRes: Int) {
+    TERLARIS(R.string.menu_sort_popular, R.string.menu_sort_popular_desc),
+    TERMURAH(R.string.menu_sort_cheapest, R.string.menu_sort_cheapest_desc),
+    TERMAHAL(R.string.menu_sort_priciest, R.string.menu_sort_priciest_desc),
 }
 
 fun Int.toRupiah(): String = "Rp" + NumberFormat.getIntegerInstance(Locale.forLanguageTag("id-ID")).format(this)

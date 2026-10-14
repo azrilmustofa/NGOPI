@@ -61,6 +61,7 @@ class ForgotPasswordActivity : AppCompatActivity() {
         etConfirm.doOnTextChanged { _, _, _, _ -> tilConfirm.error = null }
 
         findViewById<View>(R.id.btnBack).setOnClickListener { onBackPressedDispatcher.onBackPressed() }
+        findViewById<View>(R.id.tvBackToLogin).setOnClickListener { finish() }
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 when (step) {

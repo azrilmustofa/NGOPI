@@ -1,8 +1,6 @@
 <resources>
     <string name="app_name">Kopi Inggil</string>
 
-    <string name="brand_name">NGOPI</string>
-    <string name="brand_tagline">FINE COFFEE ROASTED BEANS</string>
     <string name="cd_scan">Pindai QR</string>
     <string name="welcome_label">SELAMAT DATANG</string>
     <string name="welcome_title">Duduk dulu. Kami yang antar.</string>
@@ -53,6 +51,11 @@
     <string name="forgot_confirm_label">Ulangi kata sandi</string>
     <string name="forgot_confirm_hint">Ketik ulang kata sandi</string>
     <string name="forgot_save">Simpan kata sandi</string>
+    <string name="forgot_note_email">Email belum masuk? Cek folder spam. Kode hanya berlaku beberapa menit.</string>
+    <string name="forgot_note_code">Jangan bagikan kode ini ke siapa pun, termasuk pihak NGOPI.</string>
+    <string name="forgot_note_password">Gunakan minimal 8 karakter dengan kombinasi huruf dan angka agar lebih aman.</string>
+    <string name="forgot_remember_question">Sudah ingat kata sandimu?</string>
+    <string name="forgot_staff_note">Akun staf, kasir, dan admin direset oleh pemilik kafe.</string>
     <string name="forgot_error_code">Masukkan kode lengkap dari email</string>
     <string name="forgot_error_confirm">Kata sandi tidak sama</string>
     <string name="forgot_code_sent">Kode dikirim, cek emailmu</string>
@@ -97,9 +100,17 @@
     <string name="menu_description">Pesan dari meja, bayar tanpa antre. Kami siapkan setelah pembayaran terverifikasi.</string>
     <string name="menu_featured_label">PILIHAN HARI INI</string>
     <string name="menu_featured_title">Kopi Susu Gula Aren</string>
-    <string name="menu_featured_price">Mulai Rp24.000 →</string>
+    <string name="menu_featured_price">Mulai Rp24.000</string>
     <string name="menu_search_hint">Cari kopi atau makanan</string>
-    <string name="menu_section_popular">Sering dipesan</string>
+    <string name="menu_sort_cd">Urutkan menu</string>
+    <string name="menu_sort_eyebrow">URUTKAN</string>
+    <string name="menu_sort_title">Urutkan menu</string>
+    <string name="menu_sort_popular">Terlaris</string>
+    <string name="menu_sort_popular_desc">Paling sering dipesan pelanggan</string>
+    <string name="menu_sort_cheapest">Harga termurah</string>
+    <string name="menu_sort_cheapest_desc">Dari harga terendah ke tertinggi</string>
+    <string name="menu_sort_priciest">Harga termahal</string>
+    <string name="menu_sort_priciest_desc">Dari harga tertinggi ke terendah</string>
     <string name="menu_empty">Menu tidak ditemukan</string>
     <string name="menu_added">%1$s ditambahkan</string>
     <string name="menu_add_cd">Tambah ke pesanan</string>

@@ -26,33 +26,8 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
+                android:gravity="center_vertical|end"
                 android:orientation="horizontal">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:letterSpacing="0.04"
-                        android:text="@string/brand_name"
-                        android:textColor="@color/ngopi_primary"
-                        android:textSize="23sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:letterSpacing="0.12"
-                        android:text="@string/brand_tagline"
-                        android:textColor="@color/ngopi_muted"
-                        android:textSize="8sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
 
                 <ImageView
                     android:id="@+id/btnScan"

@@ -12,6 +12,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.launch
 
@@ -23,6 +24,7 @@ class MenuFragment : Fragment(R.layout.fragment_menu) {
     private val chips = mutableMapOf<KategoriBarang, TextView>()
     private var kategori = KategoriBarang.SEMUA
     private var query = ""
+    private var urutan = UrutBarang.TERLARIS
 
     private var semuaBarang: List<DataBarang> = emptyList()
 
@@ -49,6 +51,7 @@ class MenuFragment : Fragment(R.layout.fragment_menu) {
                 render()
             }
         }
+        view.findViewById<View>(R.id.btnSort).setOnClickListener { showSortMenu() }
         render()
         loadMenuFromSupabase()
     }
@@ -58,13 +61,48 @@ class MenuFragment : Fragment(R.layout.fragment_menu) {
             try {
                 val data = supabase.from("menu_item").select().decodeList<DataBarang>()
                 if (data.isNotEmpty()) {
-                    semuaBarang = data.filter { it.isActive }
+                    val terlaris = loadTerlaris()
+                    semuaBarang = data.filter { it.isActive }.map { it.copy(terjual = terlaris[it.id] ?: 0) }
                     render()
                 }
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Gagal memuat: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    // Jumlah dipesan per menu. Jika view belum dibuat / gagal dibaca, semua dianggap 0 (urutan mengikuti database).
+    private suspend fun loadTerlaris(): Map<String, Int> = try {
+        supabase.from("menu_terlaris").select().decodeList<MenuTerlaris>().associate { it.menuItemId to it.totalDipesan }
+    } catch (e: Exception) {
+        emptyMap()
+    }
+
+    private fun showSortMenu() {
+        val dialog = BottomSheetDialog(requireContext())
+        val sheet = layoutInflater.inflate(R.layout.sheet_sort, null)
+        val options = sheet.findViewById<LinearLayout>(R.id.sortOptions)
+        UrutBarang.entries.forEach { item ->
+            val row = layoutInflater.inflate(R.layout.item_sort_option, options, false)
+            val active = item == urutan
+            row.findViewById<TextView>(R.id.tvSortLabel).apply {
+                setText(item.labelRes)
+                if (active) setTextColor(ContextCompat.getColor(context, R.color.ngopi_primary))
+            }
+            row.findViewById<TextView>(R.id.tvSortDesc).setText(item.descRes)
+            row.findViewById<View>(R.id.ivSortCheck).visibility = if (active) View.VISIBLE else View.INVISIBLE
+            if (active) row.setBackgroundResource(R.drawable.bg_sort_option_active)
+            row.setOnClickListener {
+                urutan = item
+                render()
+                dialog.dismiss()
+            }
+            options.addView(row)
+        }
+        dialog.setContentView(sheet)
+        // Latar bawaan sheet dibuat transparan agar sudut atas yang membulat terlihat.
+        (sheet.parent as? View)?.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+        dialog.show()
     }
 
     private fun buildChips(container: LinearLayout) {
@@ -102,6 +140,12 @@ class MenuFragment : Fragment(R.layout.fragment_menu) {
         val hasil = semuaBarang.filter {
             (kategori == KategoriBarang.SEMUA || it.kategori == kategori) &&
                 (query.isEmpty() || it.nama.contains(query, true) || it.deskripsi.contains(query, true))
+        }.let { list ->
+            when (urutan) {
+                UrutBarang.TERLARIS -> list.sortedByDescending { it.terjual }
+                UrutBarang.TERMURAH -> list.sortedBy { it.harga }
+                UrutBarang.TERMAHAL -> list.sortedByDescending { it.harga }
+            }
         }
         adapter.submit(hasil)
         lvBarang.fitHeightToContent()
