@@ -9,9 +9,15 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.widget.doAfterTextChanged
 import androidx.core.widget.doOnTextChanged
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.providers.builtin.Email
+import kotlinx.coroutines.launch
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 class RegisterActivity : AppCompatActivity() {
     private val segments by lazy {
@@ -52,9 +58,57 @@ class RegisterActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnBack).setOnClickListener { finish() }
         findViewById<View>(R.id.tvLogin).setOnClickListener { finish() }
 
-        findViewById<View>(R.id.btnRegister).setOnClickListener {
-            // TODO: validasi dan simpan akun setelah database tersedia
-            openMainAndClearStack()
+        val btnRegister = findViewById<View>(R.id.btnRegister)
+        btnRegister.setOnClickListener {
+            val name = etName.text?.toString().orEmpty().trim()
+            val phone = etPhone.text?.toString().orEmpty().trim()
+            val email = etEmail.text?.toString().orEmpty().trim()
+            val password = etPassword.text?.toString().orEmpty()
+
+            var valid = true
+            if (name.isEmpty()) {
+                tilName.error = getString(R.string.register_error_name)
+                valid = false
+            }
+            if (phone.isNotEmpty() && !phone.isValidPhone()) {
+                tilPhone.error = getString(R.string.register_error_phone)
+                valid = false
+            }
+            if (email.isEmpty() || !email.isValidEmail()) {
+                tilEmail.error = getString(R.string.register_error_email)
+                valid = false
+            }
+            if (password.length < MIN_PASSWORD) {
+                tilPassword.error = getString(R.string.register_error_password)
+                valid = false
+            }
+            if (!cbConsent.isChecked) {
+                Toast.makeText(this, R.string.register_error_consent, Toast.LENGTH_SHORT).show()
+                valid = false
+            }
+
+            if (!valid) return@setOnClickListener
+
+            btnRegister.isEnabled = false
+            // ponytail: direct Auth call; extract to AuthViewModel/Repository when adding profile table sync
+            lifecycleScope.launch {
+                try {
+                    supabase.auth.signUpWith(Email) {
+                        this.email = email
+                        this.password = password
+                        data = buildJsonObject {
+                            put("full_name", name)
+                            put("phone", phone)
+                        }
+                    }
+                    Toast.makeText(this@RegisterActivity, "Pendaftaran berhasil!", Toast.LENGTH_SHORT).show()
+                    openMainAndClearStack()
+                } catch (e: Exception) {
+                    Toast.makeText(this@RegisterActivity, e.localizedMessage ?: "Registrasi gagal", Toast.LENGTH_LONG).show()
+                } finally {
+                    btnRegister.isEnabled = true
+                }
+            }
         }
     }
 
