@@ -155,6 +155,8 @@
     <string name="detail_price_extra">+ %1$s</string>
     <string name="detail_max_choice">Maksimal %1$d pilihan</string>
     <string name="detail_load_failed">Pilihan menu gagal dimuat</string>
+    <string name="payment_failed">Pesanan gagal disimpan: %1$s</string>
+    <string name="payment_no_table">Meja belum terverifikasi. Scan QR meja dulu.</string>
 
     <!-- Keranjang -->
     <string name="cart_title">Keranjangmu</string>

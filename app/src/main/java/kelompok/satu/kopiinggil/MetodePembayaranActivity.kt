@@ -5,12 +5,19 @@ import android.os.Bundle
 import android.view.View
 import android.widget.RadioButton
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import java.util.UUID
 
 // Langkah 3 dari 3. Belum terintegrasi payment gateway: tekan Bayar langsung dianggap lunas.
 class MetodePembayaranActivity : AppCompatActivity() {
 
     private var selected = MetodeBayar.QRIS
+
+    // Satu kunci per layar pembayaran: coba ulang setelah gagal tidak membuat pesanan ganda.
+    private val checkoutKey = UUID.randomUUID().toString()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,12 +54,31 @@ class MetodePembayaranActivity : AppCompatActivity() {
 
         findViewById<View>(R.id.btnCancel).setOnClickListener { finish() }
         findViewById<View>(R.id.btnBack).setOnClickListener { finish() }
-        findViewById<View>(R.id.btnPay).setOnClickListener {
-            OrderManager.payAndPlace(selected)
-            // Checkout ikut ditutup supaya Back dari status mendarat di Home.
-            setResult(RESULT_OK)
-            startActivity(Intent(this, StatusPesananActivity::class.java))
-            finish()
+        val btnPay = findViewById<TextView>(R.id.btnPay)
+        btnPay.setOnClickListener {
+            if (CartManager.tableId.isBlank()) {
+                Toast.makeText(this, R.string.payment_no_table, Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+            // Cegah tap ganda selama pesanan dikirim.
+            btnPay.isEnabled = false
+            lifecycleScope.launch {
+                try {
+                    OrderManager.payAndPlace(selected, checkoutKey)
+                    // Checkout ikut ditutup supaya Back dari status mendarat di Home.
+                    setResult(RESULT_OK)
+                    startActivity(Intent(this@MetodePembayaranActivity, StatusPesananActivity::class.java))
+                    finish()
+                } catch (e: Exception) {
+                    android.util.Log.e("MetodePembayaran", "Gagal menyimpan pesanan", e)
+                    btnPay.isEnabled = true
+                    Toast.makeText(
+                        this@MetodePembayaranActivity,
+                        getString(R.string.payment_failed, e.localizedMessage.orEmpty()),
+                        Toast.LENGTH_LONG,
+                    ).show()
+                }
+            }
         }
     }
 }

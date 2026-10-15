@@ -3,6 +3,10 @@ package kelompok.satu.kopiinggil
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.TextView
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.rpc
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -24,26 +28,60 @@ data class PlacedOrder(
     val paidAt: String,
 )
 
-// Pembayaran belum terhubung ke provider: bayar langsung dianggap lunas dan pesanan diproses.
+@Serializable
+private data class ItemParam(
+    @SerialName("menu_item_id") val menuItemId: String,
+    val quantity: Int,
+    val note: String,
+    @SerialName("option_ids") val optionIds: List<String>,
+)
+
+@Serializable
+private data class CreateOrderParams(
+    @SerialName("p_table_id") val tableId: String,
+    @SerialName("p_checkout_key") val checkoutKey: String,
+    @SerialName("p_payment_method") val method: String,
+    @SerialName("p_items") val items: List<ItemParam>,
+)
+
+@Serializable
+private data class CreateOrderResult(
+    @SerialName("public_id") val publicId: String,
+    @SerialName("subtotal_rp") val subtotal: Int,
+    @SerialName("tax_rp") val tax: Int,
+    @SerialName("total_rp") val total: Int,
+)
+
+// Pembayaran belum terhubung ke provider: bayar langsung dianggap lunas, tetapi pesanan disimpan
+// ke Supabase lewat function create_order (lihat supabase/create_order.sql).
 object OrderManager {
     var lastOrder: PlacedOrder? = null
         private set
 
-    private var counter = 2840
-
+    // Perkiraan untuk tampilan checkout; angka resmi (dari app_settings) datang dari server.
     fun taxOf(subtotal: Int): Int = subtotal * 10 / 100
 
-    fun payAndPlace(method: MetodeBayar): PlacedOrder {
-        val subtotal = CartManager.getTotalPrice()
-        val tax = taxOf(subtotal)
-        counter++
+    // checkoutKey menjaga agar coba ulang setelah gagal jaringan tidak membuat pesanan ganda.
+    suspend fun payAndPlace(method: MetodeBayar, checkoutKey: String): PlacedOrder {
+        val items = CartManager.items.map { it.copy() }
+        val result = supabase.postgrest.rpc(
+            "create_order",
+            CreateOrderParams(
+                tableId = CartManager.tableId,
+                checkoutKey = checkoutKey,
+                method = method.name,
+                items = items.map { item ->
+                    ItemParam(item.barang.id, item.quantity, item.catatan, item.pilihan.map { it.id })
+                },
+            ),
+        ).decodeAs<CreateOrderResult>()
         val order = PlacedOrder(
-            number = "#NG-$counter",
+            number = "#${result.publicId}",
             table = CartManager.tableNumber,
-            items = CartManager.items.map { it.copy() },
-            subtotal = subtotal,
-            tax = tax,
-            total = subtotal + tax,
+            items = items,
+            subtotal = result.subtotal,
+            tax = result.tax,
+            total = result.total,
             method = method,
             paidAt = SimpleDateFormat("HH.mm", Locale.forLanguageTag("id-ID")).format(Date()),
         )

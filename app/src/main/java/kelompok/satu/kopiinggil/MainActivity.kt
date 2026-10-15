@@ -27,6 +27,15 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvTableNumber: TextView
     private var loadingDialog: Dialog? = null
     private var tableNumber = 0
+    private var tableId = ""
+
+    private fun openHome() {
+        startActivity(
+            Intent(this, HomeActivity::class.java)
+                .putExtra(HomeActivity.EXTRA_TABLE, tableNumber)
+                .putExtra(HomeActivity.EXTRA_TABLE_ID, tableId),
+        )
+    }
 
     private val scanLauncher = registerForActivityResult(ScanContract()) { result ->
         val content = result.contents ?: return@registerForActivityResult
@@ -41,6 +50,7 @@ class MainActivity : AppCompatActivity() {
                 }
             } else {
                 tableNumber = table.tableNumber
+                tableId = table.id
                 tvTableNumber.setTextSize(TypedValue.COMPLEX_UNIT_SP, 52f)
                 tvTableNumber.text = String.format(java.util.Locale.getDefault(), "%02d", tableNumber)
                 findViewById<View>(R.id.ivTableVerified).visibility = View.VISIBLE
@@ -49,7 +59,7 @@ class MainActivity : AppCompatActivity() {
                     alpha = 1f
                 }
                 // Otomatis berpindah ke HomeActivity (MenuFragment) dengan membawa nomor meja yang terverifikasi
-                startActivity(Intent(this@MainActivity, HomeActivity::class.java).putExtra(HomeActivity.EXTRA_TABLE, tableNumber))
+                openHome()
             }
         }
     }
@@ -69,9 +79,7 @@ class MainActivity : AppCompatActivity() {
         tvTableNumber = findViewById(R.id.tvTableNumber)
         findViewById<View>(R.id.btnScan).setOnClickListener { startScan() }
         findViewById<View>(R.id.btnOpenMenu).apply {
-            setOnClickListener {
-                startActivity(Intent(this@MainActivity, HomeActivity::class.java).putExtra(HomeActivity.EXTRA_TABLE, tableNumber))
-            }
+            setOnClickListener { openHome() }
             if (SKIP_QR_VALIDATION) {
                 isEnabled = true
                 alpha = 1f

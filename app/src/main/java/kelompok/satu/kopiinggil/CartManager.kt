@@ -1,13 +1,22 @@
 package kelompok.satu.kopiinggil
 
+// Satu pilihan yang dipilih pelanggan, lengkap dengan id supaya bisa disimpan ke order_item_option.
+data class OpsiDipilih(
+    val id: String,
+    val namaGrup: String,
+    val nama: String,
+    val selisihHarga: Int,
+)
+
 data class CartItem(
     val barang: DataBarang,
     var quantity: Int = 1,
-    // Ringkasan pilihan (mis. "Oat milk", "Less sugar"), catatan barista, dan tambahan harga per porsi.
-    val opsi: List<String> = emptyList(),
+    // Pilihan (mis. "Oat milk", "Less sugar") dan catatan barista.
+    val pilihan: List<OpsiDipilih> = emptyList(),
     val catatan: String = "",
-    val hargaOpsi: Int = 0,
 ) {
+    val opsi: List<String> get() = pilihan.map { it.nama }
+    val hargaOpsi: Int get() = pilihan.sumOf { it.selisihHarga }
     val hargaSatuan: Int get() = barang.harga + hargaOpsi
 }
 
@@ -17,19 +26,21 @@ object CartManager {
 
     var tableNumber: Int = 0
 
+    // uuid cafe_table.id dari hasil scan QR; kosong kalau validasi QR dilewati.
+    var tableId: String = ""
+
     // Baris yang sama = menu, pilihan, dan catatan yang sama.
     fun addItem(
         barang: DataBarang,
         quantity: Int = 1,
-        opsi: List<String> = emptyList(),
+        pilihan: List<OpsiDipilih> = emptyList(),
         catatan: String = "",
-        hargaOpsi: Int = 0,
     ) {
-        val existing = _items.find { it.barang.id == barang.id && it.opsi == opsi && it.catatan == catatan }
+        val existing = _items.find { it.barang.id == barang.id && it.pilihan == pilihan && it.catatan == catatan }
         if (existing != null) {
             existing.quantity += quantity
         } else {
-            _items.add(CartItem(barang, quantity, opsi, catatan, hargaOpsi))
+            _items.add(CartItem(barang, quantity, pilihan, catatan))
         }
     }
 

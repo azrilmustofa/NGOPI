@@ -1,454 +1,79 @@
-<?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/Gv0fA"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/bg_profile_screen_gradient"
-    android:fillViewport="true">
-
-    <!-- Content Container (padding: top=12dp, right=20dp, bottom=28dp, left=20dp | gap=24dp) -->
-    <LinearLayout
-        android:id="@+id/kl3jp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:clipChildren="false"
-        android:clipToPadding="false"
-        android:orientation="vertical"
-        android:paddingStart="20dp"
-        android:paddingTop="12dp"
-        android:paddingEnd="20dp"
-        android:paddingBottom="28dp">
-
-        <!-- 1. Photo Row (gap=16dp, alignItems=center) -->
-        <LinearLayout
-            android:id="@+id/DlV26"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:clipChildren="false"
-            android:clipToPadding="false"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <!-- Avatar Wrapper (84x84dp + Camera Badge di x=54, y=54) -->
-            <FrameLayout
-                android:id="@+id/ZJgiE"
-                android:layout_width="84dp"
-                android:layout_height="84dp"
-                android:clipChildren="false"
-                android:clipToPadding="false">
-
-                <!-- Lingkaran Avatar Gradient + Stroke #FFFBF7 3dp -->
-                <FrameLayout
-                    android:layout_width="84dp"
-                    android:layout_height="84dp"
-                    android:background="@drawable/bg_avatar_circle"
-                    android:elevation="8dp">
-
-                    <TextView
-                        android:id="@+id/U1PlF"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:fontFamily="sans-serif"
-                        android:includeFontPadding="false"
-                        android:text="NP"
-                        android:textColor="#FFFBF7"
-                        android:textSize="30sp"
-                        android:textStyle="bold" />
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" xmlns:tools="http://schemas.android.com/tools" android:id="@+id/scrollProfile" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/bg_profile_screen_gradient" android:fillViewport="true" tools:context=".ProfilFragment">
+    <!--  Content Container  -->
+    <LinearLayout android:id="@+id/layoutProfileContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:clipChildren="false" android:clipToPadding="false" android:orientation="vertical" android:paddingStart="20dp" android:paddingTop="12dp" android:paddingEnd="20dp" android:paddingBottom="28dp">
+        <!--  1. Photo Row  -->
+        <LinearLayout android:id="@+id/layoutPhotoRow" android:layout_width="match_parent" android:layout_height="wrap_content" android:clipChildren="false" android:clipToPadding="false" android:gravity="center_vertical" android:orientation="horizontal">
+            <!--  Avatar Wrapper  -->
+            <FrameLayout android:id="@+id/layoutAvatarWrapper" android:layout_width="84dp" android:layout_height="84dp" android:clipChildren="false" android:clipToPadding="false">
+                <!--  Lingkaran Avatar Gradient  -->
+                <FrameLayout android:id="@+id/layoutAvatarCircle" android:layout_width="84dp" android:layout_height="84dp" android:background="@drawable/bg_avatar_circle" android:elevation="8dp">
+                    <TextView android:id="@+id/tvAvatarInitials" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:fontFamily="sans-serif" android:includeFontPadding="false" android:text="NP" android:textColor="#FFFBF7" android:textSize="30sp" android:textStyle="bold"/>
                 </FrameLayout>
-
-                <!-- Camera Badge (30x30dp di posisi x:54, y:54 / pojok kanan bawah) -->
-                <FrameLayout
-                    android:id="@+id/xdw3t"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
-                    android:layout_gravity="top|start"
-                    android:layout_marginStart="54dp"
-                    android:layout_marginTop="54dp"
-                    android:background="@drawable/bg_camera_badge"
-                    android:elevation="9dp">
-
-                    <ImageView
-                        android:id="@+id/wmiNa"
-                        android:layout_width="15dp"
-                        android:layout_height="15dp"
-                        android:layout_gravity="center"
-                        android:importantForAccessibility="no"
-                        android:src="@drawable/ic_lucide_pencil"
-                        app:tint="#A85311" />
+                <!--  Camera / Edit Badge  -->
+                <FrameLayout android:id="@+id/btnAvatarBadge" android:layout_width="30dp" android:layout_height="30dp" android:layout_gravity="top|start" android:layout_marginStart="54dp" android:layout_marginTop="54dp" android:background="@drawable/bg_camera_badge" android:elevation="9dp">
+                    <ImageView android:id="@+id/ivAvatarBadgeIcon" android:layout_width="15dp" android:layout_height="15dp" android:layout_gravity="center" android:importantForAccessibility="no" android:src="@drawable/ic_lucide_pencil" app:tint="#A85311"/>
                 </FrameLayout>
             </FrameLayout>
-
-            <!-- Photo Info (gap=3dp) -->
-            <LinearLayout
-                android:id="@+id/agTbR"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/CM6zy"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif"
-                    android:text="Foto profil"
-                    android:textColor="#522500"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/bwAMt"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="3dp"
-                    android:fontFamily="sans-serif"
-                    android:text="JPG atau PNG, maksimal 2 MB"
-                    android:textColor="#85654F"
-                    android:textSize="12sp" />
-
-                <TextView
-                    android:id="@+id/ZnrB2"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="3dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:fontFamily="sans-serif"
-                    android:text="Ganti foto"
-                    android:textColor="#A85311"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
+            <!--  Photo Info  -->
+            <LinearLayout android:id="@+id/layoutPhotoInfo" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:layout_weight="1" android:orientation="vertical">
+                <TextView android:id="@+id/tvPhotoTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="sans-serif" android:text="Foto profil" android:textColor="#522500" android:textSize="15sp" android:textStyle="bold"/>
+                <TextView android:id="@+id/tvPhotoSubtitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:fontFamily="sans-serif" android:text="JPG atau PNG, maksimal 2 MB" android:textColor="#85654F" android:textSize="12sp"/>
+                <TextView android:id="@+id/btnChangePhoto" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:clickable="true" android:focusable="true" android:fontFamily="sans-serif" android:text="Ganti foto" android:textColor="#A85311" android:textSize="13sp" android:textStyle="bold"/>
             </LinearLayout>
         </LinearLayout>
-
-        <!-- 2. Form Section (layout=vertical, gap=15dp) -->
-        <LinearLayout
-            android:id="@+id/m75eK"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:clipChildren="false"
-            android:clipToPadding="false"
-            android:orientation="vertical">
-
-            <!-- Field 1: Nama lengkap (gap=7dp) -->
-            <LinearLayout
-                android:id="@+id/n7yVi3"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <!-- Label row -->
-                <LinearLayout
-                    android:id="@+id/xd3zE"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:id="@+id/QHwcM"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:fontFamily="sans-serif-medium"
-                        android:text="Nama lengkap"
-                        android:textColor="#522500"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:id="@+id/b5vYyY"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:fontFamily="sans-serif"
-                        android:text="Edit"
-                        android:textColor="#A85311"
-                        android:textSize="13sp"
-                        android:textStyle="bold" />
+        <!--  2. Form Section  -->
+        <LinearLayout android:id="@+id/layoutFormSection" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="24dp" android:clipChildren="false" android:clipToPadding="false" android:orientation="vertical">
+            <!--  Field 1: Nama Lengkap  -->
+            <LinearLayout android:id="@+id/layoutFieldName" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                <LinearLayout android:id="@+id/layoutLabelName" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+                    <TextView android:id="@+id/tvLabelName" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:fontFamily="sans-serif-medium" android:text="Nama lengkap" android:textColor="#522500" android:textSize="12sp"/>
+                    <TextView android:id="@+id/btnEditName" android:layout_width="wrap_content" android:layout_height="wrap_content" android:clickable="true" android:focusable="true" android:fontFamily="sans-serif" android:text="Edit" android:textColor="#A85311" android:textSize="13sp" android:textStyle="bold"/>
                 </LinearLayout>
-
-                <!-- Nama lengkap input (height=50dp, corner=11dp, stroke=#A85311 1.5dp, gap=10dp) -->
-                <LinearLayout
-                    android:id="@+id/eJw9x"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:layout_marginTop="7dp"
-                    android:background="@drawable/bg_input_active"
-                    android:elevation="4dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp">
-
-                    <ImageView
-                        android:id="@+id/cR9Yp"
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
-                        android:importantForAccessibility="no"
-                        android:src="@drawable/ic_lucide_user"
-                        app:tint="#A85311" />
-
-                    <EditText
-                        android:id="@+id/IAnlu"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_marginStart="10dp"
-                        android:layout_weight="1"
-                        android:background="@null"
-                        android:fontFamily="sans-serif"
-                        android:gravity="center_vertical"
-                        android:inputType="textPersonName"
-                        android:text="Nadia Putri"
-                        android:textColor="#522500"
-                        android:textSize="14sp" />
+                <LinearLayout android:id="@+id/layoutInputName" android:layout_width="match_parent" android:layout_height="50dp" android:layout_marginTop="7dp" android:background="@drawable/bg_input_active" android:elevation="4dp" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="14dp" android:paddingEnd="14dp">
+                    <ImageView android:id="@+id/ivIconName" android:layout_width="18dp" android:layout_height="18dp" android:importantForAccessibility="no" android:src="@drawable/ic_lucide_user" app:tint="#A85311"/>
+                    <!--  ID disesuaikan dengan ProfilFragment.kt: tvProfileName  -->
+                    <EditText android:id="@+id/tvProfileName" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginStart="10dp" android:layout_weight="1" android:background="@null" android:fontFamily="sans-serif" android:gravity="center_vertical" android:inputType="textPersonName" android:text="Nadia Putri" android:textColor="#522500" android:textSize="14sp"/>
                 </LinearLayout>
             </LinearLayout>
-
-            <!-- Field 2: Nomor WhatsApp (gap=7dp, marginTop=15dp) -->
-            <LinearLayout
-                android:id="@+id/pFvdV"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="15dp"
-                android:orientation="vertical">
-
-                <!-- Label row -->
-                <LinearLayout
-                    android:id="@+id/b0kUQ"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:id="@+id/dwFuw"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:fontFamily="sans-serif-medium"
-                        android:text="Nomor WhatsApp"
-                        android:textColor="#522500"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:id="@+id/t4wrQM"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:fontFamily="sans-serif"
-                        android:text="Edit"
-                        android:textColor="#A85311"
-                        android:textSize="13sp"
-                        android:textStyle="bold" />
+            <!--  Field 2: Nomor WhatsApp  -->
+            <LinearLayout android:id="@+id/layoutFieldPhone" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="15dp" android:orientation="vertical">
+                <LinearLayout android:id="@+id/layoutLabelPhone" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+                    <TextView android:id="@+id/tvLabelPhone" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:fontFamily="sans-serif-medium" android:text="Nomor WhatsApp" android:textColor="#522500" android:textSize="12sp"/>
+                    <TextView android:id="@+id/btnEditPhone" android:layout_width="wrap_content" android:layout_height="wrap_content" android:clickable="true" android:focusable="true" android:fontFamily="sans-serif" android:text="Edit" android:textColor="#A85311" android:textSize="13sp" android:textStyle="bold"/>
                 </LinearLayout>
-
-                <!-- Nomor WhatsApp input (height=50dp, corner=11dp, stroke=#FFDCC2 1dp, gap=10dp) -->
-                <LinearLayout
-                    android:id="@+id/sr6P6"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:layout_marginTop="7dp"
-                    android:background="@drawable/bg_input_default"
-                    android:elevation="4dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp">
-
-                    <TextView
-                        android:id="@+id/g1k0JR"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="sans-serif"
-                        android:text="+62"
-                        android:textColor="#522500"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <!-- Prefix divider (width=1dp, height=20dp, fill=#FFDCC2) -->
-                    <View
-                        android:id="@+id/jiTk9"
-                        android:layout_width="1dp"
-                        android:layout_height="20dp"
-                        android:layout_marginStart="10dp"
-                        android:background="#FFDCC2" />
-
-                    <EditText
-                        android:id="@+id/NOtIC"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_marginStart="10dp"
-                        android:layout_weight="1"
-                        android:background="@null"
-                        android:fontFamily="sans-serif"
-                        android:gravity="center_vertical"
-                        android:inputType="phone"
-                        android:text="812 3456 7890"
-                        android:textColor="#522500"
-                        android:textSize="14sp" />
+                <LinearLayout android:id="@+id/layoutInputPhone" android:layout_width="match_parent" android:layout_height="50dp" android:layout_marginTop="7dp" android:background="@drawable/bg_input_default" android:elevation="4dp" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="14dp" android:paddingEnd="14dp">
+                    <TextView android:id="@+id/tvPhonePrefix" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="sans-serif" android:text="+62" android:textColor="#522500" android:textSize="14sp" android:textStyle="bold"/>
+                    <View android:id="@+id/dividerPhonePrefix" android:layout_width="1dp" android:layout_height="20dp" android:layout_marginStart="10dp" android:background="#FFDCC2"/>
+                    <!--  ID disesuaikan dengan ProfilFragment.kt: tvProfilePhone  -->
+                    <EditText android:id="@+id/tvProfilePhone" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginStart="10dp" android:layout_weight="1" android:background="@null" android:fontFamily="sans-serif" android:gravity="center_vertical" android:inputType="phone" android:text="812 3456 7890" android:textColor="#522500" android:textSize="14sp"/>
                 </LinearLayout>
             </LinearLayout>
-
-            <!-- Field 3: Email (gap=7dp, marginTop=15dp) -->
-            <LinearLayout
-                android:id="@+id/Elfmj"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="15dp"
-                android:orientation="vertical">
-
-                <!-- Label row -->
-                <LinearLayout
-                    android:id="@+id/n0psN"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:id="@+id/k5JFl6"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:fontFamily="sans-serif-medium"
-                        android:text="Email"
-                        android:textColor="#522500"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:id="@+id/mpSY0"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:fontFamily="sans-serif"
-                        android:text="Edit"
-                        android:textColor="#A85311"
-                        android:textSize="13sp"
-                        android:textStyle="bold" />
+            <!--  Field 3: Email  -->
+            <LinearLayout android:id="@+id/layoutFieldEmail" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="15dp" android:orientation="vertical">
+                <LinearLayout android:id="@+id/layoutLabelEmail" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+                    <TextView android:id="@+id/tvLabelEmail" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:fontFamily="sans-serif-medium" android:text="Email" android:textColor="#522500" android:textSize="12sp"/>
+                    <TextView android:id="@+id/btnEditEmail" android:layout_width="wrap_content" android:layout_height="wrap_content" android:clickable="true" android:focusable="true" android:fontFamily="sans-serif" android:text="Edit" android:textColor="#A85311" android:textSize="13sp" android:textStyle="bold"/>
                 </LinearLayout>
-
-                <!-- Email input (height=50dp, corner=11dp, stroke=#FFDCC2 1dp, gap=10dp) -->
-                <LinearLayout
-                    android:id="@+id/N36T2"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:layout_marginTop="7dp"
-                    android:background="@drawable/bg_input_default"
-                    android:elevation="4dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp">
-
-                    <ImageView
-                        android:id="@+id/z8nwzN"
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
-                        android:importantForAccessibility="no"
-                        android:src="@drawable/ic_lucide_mail"
-                        app:tint="#85654F" />
-
-                    <EditText
-                        android:id="@+id/wDVlZ"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_marginStart="10dp"
-                        android:layout_weight="1"
-                        android:background="@null"
-                        android:fontFamily="sans-serif"
-                        android:gravity="center_vertical"
-                        android:inputType="textEmailAddress"
-                        android:text="nadia@email.com"
-                        android:textColor="#522500"
-                        android:textSize="14sp" />
+                <LinearLayout android:id="@+id/layoutInputEmail" android:layout_width="match_parent" android:layout_height="50dp" android:layout_marginTop="7dp" android:background="@drawable/bg_input_default" android:elevation="4dp" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="14dp" android:paddingEnd="14dp">
+                    <ImageView android:id="@+id/ivIconEmail" android:layout_width="18dp" android:layout_height="18dp" android:importantForAccessibility="no" android:src="@drawable/ic_lucide_mail" app:tint="#85654F"/>
+                    <!--  ID disesuaikan dengan ProfilFragment.kt: tvProfileEmail  -->
+                    <EditText android:id="@+id/tvProfileEmail" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginStart="10dp" android:layout_weight="1" android:background="@null" android:fontFamily="sans-serif" android:gravity="center_vertical" android:inputType="textEmailAddress" android:text="nadia@email.com" android:textColor="#522500" android:textSize="14sp"/>
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
-
-        <!-- 3. Change Password Row (corner=14dp, stroke=#FFDCC2 1dp, padding=[14, 16], gap=12dp) -->
-        <LinearLayout
-            android:id="@+id/rmSLD"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:background="@drawable/bg_change_password_row"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingTop="14dp"
-            android:paddingEnd="16dp"
-            android:paddingBottom="14dp">
-
-            <ImageView
-                android:id="@+id/YsFCf"
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:importantForAccessibility="no"
-                android:src="@drawable/ic_lucide_lock"
-                app:tint="#A85311" />
-
-            <TextView
-                android:id="@+id/mvDfB"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_marginEnd="12dp"
-                android:layout_weight="1"
-                android:fontFamily="sans-serif-medium"
-                android:text="Ubah kata sandi"
-                android:textColor="#522500"
-                android:textSize="14sp" />
-
-            <ImageView
-                android:id="@+id/G6SRmY"
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:importantForAccessibility="no"
-                android:src="@drawable/ic_lucide_chevron_right"
-                app:tint="#85654F" />
+        <!--  3. Change Password Row (ID disesuaikan: rowEditPassword)  -->
+        <LinearLayout android:id="@+id/rowEditPassword" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="24dp" android:background="@drawable/bg_change_password_row" android:clickable="true" android:focusable="true" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="16dp" android:paddingTop="14dp" android:paddingEnd="16dp" android:paddingBottom="14dp">
+            <ImageView android:id="@+id/ivIconPassword" android:layout_width="18dp" android:layout_height="18dp" android:importantForAccessibility="no" android:src="@drawable/ic_lucide_lock" app:tint="#A85311"/>
+            <TextView android:id="@+id/tvEditPassword" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:layout_marginEnd="12dp" android:layout_weight="1" android:fontFamily="sans-serif-medium" android:text="Ubah kata sandi" android:textColor="#522500" android:textSize="14sp"/>
+            <ImageView android:id="@+id/ivChevronPassword" android:layout_width="18dp" android:layout_height="18dp" android:importantForAccessibility="no" android:src="@drawable/ic_lucide_chevron_right" app:tint="#85654F"/>
         </LinearLayout>
-
-        <!-- 4. Logout Button (height=52dp, fill=#F8EAE5, corner=13dp, stroke=#A4483D 1.5dp, gap=10dp) -->
-        <LinearLayout
-            android:id="@+id/c5C90I"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:layout_marginTop="24dp"
-            android:background="@drawable/bg_logout_button"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:orientation="horizontal">
-
-            <ImageView
-                android:id="@+id/fUa1y"
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:importantForAccessibility="no"
-                android:src="@drawable/ic_lucide_log_out"
-                app:tint="#A4483D" />
-
-            <TextView
-                android:id="@+id/m5EAL"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:fontFamily="sans-serif"
-                android:text="Keluar"
-                android:textColor="#A4483D"
-                android:textSize="15sp"
-                android:textStyle="bold" />
+        <!--  Baris Pusat Bantuan & Syarat Ketentuan (disediakan agar ProfilFragment.kt tidak Force Close/Error)  -->
+        <View android:id="@+id/rowHelpCenter" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone"/>
+        <View android:id="@+id/rowTerms" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone"/>
+        <!--  4. Logout Button (ID disesuaikan: btnLogout)  -->
+        <LinearLayout android:id="@+id/btnLogout" android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="24dp" android:background="@drawable/bg_logout_button" android:clickable="true" android:focusable="true" android:gravity="center" android:orientation="horizontal">
+            <ImageView android:id="@+id/ivIconLogout" android:layout_width="18dp" android:layout_height="18dp" android:importantForAccessibility="no" android:src="@drawable/ic_lucide_log_out" app:tint="#A4483D"/>
+            <TextView android:id="@+id/tvLogout" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="10dp" android:fontFamily="sans-serif" android:text="Keluar" android:textColor="#A4483D" android:textSize="15sp" android:textStyle="bold"/>
         </LinearLayout>
-
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

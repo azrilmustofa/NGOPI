@@ -14,6 +14,7 @@ class HomeActivity : AppCompatActivity() {
 
         val table = intent.getIntExtra(EXTRA_TABLE, 0)
         CartManager.tableNumber = table
+        CartManager.tableId = intent.getStringExtra(EXTRA_TABLE_ID).orEmpty()
 
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
@@ -53,6 +54,7 @@ class HomeActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_TABLE = "extra_table"
+        const val EXTRA_TABLE_ID = "extra_table_id"
         private const val TAG_MENU = "tab_menu"
         private const val TAG_PESANAN = "tab_pesanan"
         private const val TAG_PROFIL = "tab_profil"

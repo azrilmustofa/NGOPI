@@ -176,8 +176,11 @@ class DetailMenuSheet(private val fragment: Fragment, private val barang: DataBa
         layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1)
     }
 
-    private fun opsiDipilih(): List<OpsiMenu> =
-        grup.flatMap { g -> g.opsi.filter { it.id in terpilih[g.id].orEmpty() } }
+    private fun opsiDipilih(): List<OpsiDipilih> =
+        grup.flatMap { g ->
+            g.opsi.filter { it.id in terpilih[g.id].orEmpty() }
+                .map { OpsiDipilih(it.id, g.name, it.name, it.selisihHarga) }
+        }
 
     private fun hargaOpsi() = opsiDipilih().sumOf { it.selisihHarga }
 
@@ -199,7 +202,7 @@ class DetailMenuSheet(private val fragment: Fragment, private val barang: DataBa
     private fun tambahKeKeranjang() {
         if (!lengkap()) return
         val catatan = sheet.findViewById<EditText>(R.id.etCatatan).text?.toString().orEmpty().trim()
-        CartManager.addItem(barang, qty, opsiDipilih().map { it.name }, catatan, hargaOpsi())
+        CartManager.addItem(barang, qty, opsiDipilih(), catatan)
         Toast.makeText(context, context.getString(R.string.menu_added, barang.nama), Toast.LENGTH_SHORT).show()
         dialog.dismiss()
     }
