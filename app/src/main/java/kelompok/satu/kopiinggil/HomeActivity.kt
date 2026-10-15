@@ -20,7 +20,7 @@ class HomeActivity : AppCompatActivity() {
                 .setReorderingAllowed(true)
                 .add(R.id.fragmentContainer, MenuFragment.newInstance(table), TAG_MENU)
                 .add(R.id.fragmentContainer, PesananFragment(), TAG_PESANAN)
-                .add(R.id.fragmentContainer, BantuanFragment(), TAG_BANTUAN)
+                .add(R.id.fragmentContainer, ProfilFragment(), TAG_PROFIL)
                 .commitNow()
             showTab(TAG_MENU)
         }
@@ -29,7 +29,7 @@ class HomeActivity : AppCompatActivity() {
             val tag = when (item.itemId) {
                 R.id.nav_menu -> TAG_MENU
                 R.id.nav_orders -> TAG_PESANAN
-                R.id.nav_help -> TAG_BANTUAN
+                R.id.nav_profile -> TAG_PROFIL
                 else -> return@setOnItemSelectedListener false
             }
             showTab(tag)
@@ -43,7 +43,7 @@ class HomeActivity : AppCompatActivity() {
 
     // Semua tab tetap hidup (show/hide) supaya pencarian dan filter di Menu tidak hilang saat pindah tab.
     private fun showTab(tag: String) {
-        val tabs = listOf(TAG_MENU, TAG_PESANAN, TAG_BANTUAN).mapNotNull<String, Fragment> {
+        val tabs = listOf(TAG_MENU, TAG_PESANAN, TAG_PROFIL).mapNotNull<String, Fragment> {
             supportFragmentManager.findFragmentByTag(it)
         }
         supportFragmentManager.beginTransaction().setReorderingAllowed(true).apply {
@@ -55,6 +55,6 @@ class HomeActivity : AppCompatActivity() {
         const val EXTRA_TABLE = "extra_table"
         private const val TAG_MENU = "tab_menu"
         private const val TAG_PESANAN = "tab_pesanan"
-        private const val TAG_BANTUAN = "tab_bantuan"
+        private const val TAG_PROFIL = "tab_profil"
     }
 }

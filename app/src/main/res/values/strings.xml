@@ -117,10 +117,19 @@
     <string name="nav_menu">Menu</string>
     <string name="nav_orders">Pesanan</string>
     <string name="nav_help">Bantuan</string>
+    <string name="nav_profile">Profil</string>
     <string name="pesanan_title">Pesananmu</string>
     <string name="pesanan_empty">Daftar pesanan akan tampil di sini.</string>
     <string name="bantuan_title">Bantuan</string>
     <string name="bantuan_empty">Panggil Kasir dan pusat bantuan akan tersedia di sini.</string>
+    <string name="profile_eyebrow">AKUN SAYA</string>
+    <string name="profile_title">Profil</string>
+    <string name="profile_member_badge">Member NGOPI</string>
+    <string name="profile_edit_password">Ubah kata sandi</string>
+    <string name="profile_help_cashier">Pusat bantuan &amp; panggil kasir</string>
+    <string name="profile_terms">Syarat &amp; Kebijakan Privasi</string>
+    <string name="profile_logout">Keluar dari akun</string>
+    <string name="profile_logout_confirm">Yakin ingin keluar dari akun?</string>
 
     <!-- Detail Produk -->
     <string name="detail_title">Detail menu</string>
@@ -196,4 +205,47 @@
     <string name="status_receipt_note">Struk WhatsApp dikirim terpisah. Status pesanan tetap dapat dipantau di sini.</string>
     <string name="status_btn_order_again">Pesan lagi</string>
     <string name="status_btn_call_cashier">Panggil Kasir</string>
+
+    <!-- Menunggu Verifikasi (05) -->
+    <string name="verif_eyebrow">PEMBAYARAN</string>
+    <string name="verif_title">Sedang dicek</string>
+    <string name="verif_subtitle">Jangan tutup halaman pembayaran jika masih berlangsung. Kami akan memperbarui status otomatis.</string>
+    <string name="verif_card_title">Menunggu verifikasi pembayaran</string>
+    <string name="verif_card_detail">Belum ada konfirmasi dari penyedia pembayaran</string>
+    <string name="verif_order_heading">PESANANMU</string>
+    <string name="verif_order_label">Nomor order</string>
+    <string name="verif_table_label">Meja</string>
+    <string name="verif_caution">Kembali dari halaman bayar belum berarti lunas. Hindari membayar ulang sebelum status jelas.</string>
+    <string name="verif_btn_check">Cek status pembayaran</string>
+    <string name="verif_btn_help">Butuh bantuan Kasir</string>
+
+    <!-- Pembayaran Belum Berhasil (07) -->
+    <string name="failed_title">Pembayaran belum berhasil</string>
+    <string name="failed_subtitle">Transaksi belum tercatat lunas. Pesanan tidak masuk ke dapur.</string>
+    <string name="failed_card_title">Percobaan pembayaran kedaluwarsa</string>
+    <string name="failed_card_detail">Belum ada dana diterima untuk order ini.</string>
+    <string name="failed_notice_title">Sebelum coba lagi</string>
+    <string name="failed_notice_body">Kami akan memeriksa transaksi sebelumnya ke penyedia pembayaran. Jika statusnya belum pasti, Kasir akan membantu agar kamu tidak tertagih dua kali.</string>
+    <string name="failed_btn_retry">Cek &amp; coba bayar lagi</string>
+    <string name="failed_btn_help">Minta bantuan Kasir</string>
+
+    <!-- Perubahan Sebelum Bayar (09) -->
+    <string name="review_eyebrow">PERLU DITINJAU</string>
+    <string name="review_title">Ada perubahan menu</string>
+    <string name="review_subtitle">Harga dan stok dicek ulang sebelum order dibuat. Belum ada pembayaran.</string>
+    <string name="review_changed_badge">HARGA DIPERBARUI</string>
+    <string name="review_prev_price">Sebelumnya</string>
+    <string name="review_curr_price">Harga sekarang</string>
+    <string name="review_new_total">Total baru</string>
+    <string name="review_note">Lanjut hanya jika kamu setuju dengan rincian baru. Kamu juga bisa kembali dan mengganti item.</string>
+    <string name="review_btn_agree">Setuju &amp; lanjutkan</string>
+    <string name="review_btn_back">Kembali ke keranjang</string>
+
+    <!-- Pesanan Selesai (10) -->
+    <string name="done_title">Selamat menikmati!</string>
+    <string name="done_subtitle">Pesanan selesai · Meja %1$02d</string>
+    <string name="done_card_title">Pesanan selesai</string>
+    <string name="done_card_detail">Diselesaikan pukul %1$s</string>
+    <string name="done_wa_note">Struk dikirim ke WhatsApp. Jika belum sampai, hubungi Kasir.</string>
+    <string name="done_btn_previous_orders">Lihat pesanan sebelumnya</string>
 </resources>

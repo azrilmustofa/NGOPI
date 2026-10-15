@@ -9,7 +9,7 @@
         android:icon="@drawable/ic_receipt"
         android:title="@string/nav_orders" />
     <item
-        android:id="@+id/nav_help"
-        android:icon="@drawable/ic_help"
-        android:title="@string/nav_help" />
+        android:id="@+id/nav_profile"
+        android:icon="@drawable/ic_person"
+        android:title="@string/nav_profile" />
 </menu>
