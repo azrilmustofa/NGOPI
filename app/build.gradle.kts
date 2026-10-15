@@ -40,6 +40,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.material)
     implementation(libs.zxing.embedded)
+    implementation(libs.coil)
 
     implementation(platform(libs.supabase.bom))
     implementation(libs.supabase.postgrest)
