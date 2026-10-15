@@ -158,6 +158,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:id="@+id/tvStepPaymentTime"
                             android:text="09.41 · Tervalidasi"
                             android:textColor="@color/ngopi_muted"
                             android:textSize="11sp" />
@@ -196,6 +197,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:id="@+id/tvStepOrderTime"
                             android:text="09.42 · Barista mulai bekerja"
                             android:textColor="@color/ngopi_muted"
                             android:textSize="11sp" />
@@ -234,6 +236,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:id="@+id/tvStepBrewTime"
                             android:text="Diperbarui 09.45"
                             android:textColor="@color/ngopi_muted"
                             android:textSize="11sp" />
@@ -296,48 +299,11 @@
                     android:textStyle="bold" />
 
                 <LinearLayout
+                    android:id="@+id/llOrderItems"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Es Kopi Susu · 1×"
-                        android:textColor="@color/ngopi_ink"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Rp24.000"
-                        android:textColor="@color/ngopi_ink"
-                        android:textSize="13sp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Cappuccino · 1×"
-                        android:textColor="@color/ngopi_ink"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Rp28.000"
-                        android:textColor="@color/ngopi_ink"
-                        android:textSize="13sp" />
-                </LinearLayout>
+                    android:orientation="vertical" />
 
                 <View
                     android:layout_width="match_parent"

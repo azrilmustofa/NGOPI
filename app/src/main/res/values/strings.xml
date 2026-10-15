@@ -135,6 +135,17 @@
     <string name="detail_qty_title">Jumlah</string>
     <string name="detail_total_label">Total item</string>
     <string name="detail_btn_add">Tambah ke keranjang</string>
+    <string name="detail_close">Tutup</string>
+    <string name="detail_minus">Kurangi jumlah</string>
+    <string name="detail_plus">Tambah jumlah</string>
+    <string name="detail_rule_single">Pilih 1 · %1$s</string>
+    <string name="detail_rule_multi">Pilih hingga %1$d · %2$s</string>
+    <string name="detail_required">Wajib</string>
+    <string name="detail_optional">Opsional</string>
+    <string name="detail_price_included">Termasuk</string>
+    <string name="detail_price_extra">+ %1$s</string>
+    <string name="detail_max_choice">Maksimal %1$d pilihan</string>
+    <string name="detail_load_failed">Pilihan menu gagal dimuat</string>
 
     <!-- Keranjang -->
     <string name="cart_title">Keranjangmu</string>

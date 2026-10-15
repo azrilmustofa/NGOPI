@@ -1,16 +1,12 @@
 package kelompok.satu.kopiinggil
 
 import android.content.Context
-import android.content.res.ColorStateList
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.core.content.ContextCompat
-import coil.dispose
-import coil.load
 
 class BarangAdapter(
     context: Context,
@@ -38,29 +34,8 @@ class BarangAdapter(
         holder.deskripsi.text = barang.deskripsi
         holder.harga.text = barang.harga.toRupiah()
         holder.tambah.setOnClickListener { onTambah(barang) }
-        bindFoto(holder.foto, barang.photoUrl)
+        holder.foto.loadFoto(barang.photoUrl, PLACEHOLDER_PADDING_DP)
         return view
-    }
-
-    // Foto dari photo_url; jika kosong atau gagal dimuat, tampil ikon kopi seperti placeholder.
-    private fun bindFoto(foto: ImageView, url: String?) {
-        foto.dispose()
-        showPlaceholder(foto)
-        if (url.isNullOrBlank()) return
-        foto.load(url) {
-            crossfade(true)
-            listener(onSuccess = { _, _ ->
-                foto.setPadding(0, 0, 0, 0)
-                foto.imageTintList = null
-            })
-        }
-    }
-
-    private fun showPlaceholder(foto: ImageView) {
-        val pad = (PLACEHOLDER_PADDING_DP * foto.resources.displayMetrics.density).toInt()
-        foto.setPadding(pad, pad, pad, pad)
-        foto.imageTintList = ColorStateList.valueOf(ContextCompat.getColor(foto.context, R.color.ngopi_primary))
-        foto.setImageResource(R.drawable.ic_coffee)
     }
 
     private companion object {

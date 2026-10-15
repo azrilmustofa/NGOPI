@@ -42,6 +42,7 @@ class MenuFragment : Fragment(R.layout.fragment_menu) {
         tvEmpty = view.findViewById(R.id.tvEmpty)
         lvBarang = view.findViewById(R.id.lvBarang)
         lvBarang.adapter = adapter
+        lvBarang.setOnItemClickListener { _, _, position, _ -> DetailMenuSheet(this, adapter.getItem(position)).show() }
 
         chips.clear()
         buildChips(view.findViewById(R.id.categoryContainer))

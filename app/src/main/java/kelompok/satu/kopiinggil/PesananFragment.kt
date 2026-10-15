@@ -1,22 +1,24 @@
 package kelompok.satu.kopiinggil
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 
+// Tab "Pesanan" tampil seperti halaman Keranjang di desain; tombol bawah lanjut ke checkout.
 class PesananFragment : Fragment(R.layout.fragment_pesanan) {
 
     private lateinit var tvTableBadge: TextView
     private lateinit var llCartEmptyState: LinearLayout
     private lateinit var llActiveCartContainer: LinearLayout
     private lateinit var llCartItemsList: LinearLayout
-    private lateinit var tvCartTotalItems: TextView
-    private lateinit var tvCartTotalPrice: TextView
+    private lateinit var llCartBottomBar: View
+    private lateinit var tvSubtotal: TextView
+    private lateinit var tvBottomSubtotal: TextView
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -25,26 +27,17 @@ class PesananFragment : Fragment(R.layout.fragment_pesanan) {
         llCartEmptyState = view.findViewById(R.id.llCartEmptyState)
         llActiveCartContainer = view.findViewById(R.id.llActiveCartContainer)
         llCartItemsList = view.findViewById(R.id.llCartItemsList)
-        tvCartTotalItems = view.findViewById(R.id.tvCartTotalItems)
-        tvCartTotalPrice = view.findViewById(R.id.tvCartTotalPrice)
+        llCartBottomBar = view.findViewById(R.id.llCartBottomBar)
+        tvSubtotal = view.findViewById(R.id.tvSubtotal)
+        tvBottomSubtotal = view.findViewById(R.id.tvBottomSubtotal)
 
-        view.findViewById<View>(R.id.btnGoToMenu).setOnClickListener {
-            (activity as? HomeActivity)?.selectMenuTab()
-        }
-
-        view.findViewById<View>(R.id.btnClearCart).setOnClickListener {
-            CartManager.clear()
-            renderPesanan()
-            Toast.makeText(requireContext(), "Pesanan dikosongkan", Toast.LENGTH_SHORT).show()
-        }
+        val goToMenu = View.OnClickListener { (activity as? HomeActivity)?.selectMenuTab() }
+        view.findViewById<View>(R.id.btnGoToMenu).setOnClickListener(goToMenu)
+        view.findViewById<View>(R.id.btnAddMore).setOnClickListener(goToMenu)
 
         view.findViewById<View>(R.id.btnCheckoutCart).setOnClickListener {
             if (CartManager.items.isNotEmpty()) {
-                Toast.makeText(
-                    requireContext(),
-                    "Memproses pesanan (${CartManager.getTotalItemCount()} item - ${CartManager.getTotalPrice().toRupiah()})",
-                    Toast.LENGTH_SHORT
-                ).show()
+                startActivity(Intent(requireContext(), CheckoutActivity::class.java))
             }
         }
 
@@ -58,9 +51,7 @@ class PesananFragment : Fragment(R.layout.fragment_pesanan) {
 
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
-        if (!hidden) {
-            renderPesanan()
-        }
+        if (!hidden) renderPesanan()
     }
 
     private fun renderPesanan() {
@@ -74,46 +65,40 @@ class PesananFragment : Fragment(R.layout.fragment_pesanan) {
         }
 
         val cartItems = CartManager.items
-        if (cartItems.isEmpty()) {
-            llCartEmptyState.visibility = View.VISIBLE
-            llActiveCartContainer.visibility = View.GONE
-        } else {
-            llCartEmptyState.visibility = View.GONE
-            llActiveCartContainer.visibility = View.VISIBLE
+        val isEmpty = cartItems.isEmpty()
+        llCartEmptyState.visibility = if (isEmpty) View.VISIBLE else View.GONE
+        llActiveCartContainer.visibility = if (isEmpty) View.GONE else View.VISIBLE
+        llCartBottomBar.visibility = if (isEmpty) View.GONE else View.VISIBLE
+        if (isEmpty) return
 
-            llCartItemsList.removeAllViews()
-            val inflater = LayoutInflater.from(requireContext())
+        llCartItemsList.removeAllViews()
+        val inflater = LayoutInflater.from(requireContext())
 
-            for (cartItem in cartItems) {
-                val itemView = inflater.inflate(R.layout.item_pesanan_cart, llCartItemsList, false)
+        cartItems.forEachIndexed { index, cartItem ->
+            val itemView = inflater.inflate(R.layout.item_pesanan_cart, llCartItemsList, false)
 
-                val tvNama = itemView.findViewById<TextView>(R.id.tvCartItemNama)
-                val tvHargaUnit = itemView.findViewById<TextView>(R.id.tvCartItemHargaUnit)
-                val tvTotalHarga = itemView.findViewById<TextView>(R.id.tvCartItemTotalHarga)
-                val tvQty = itemView.findViewById<TextView>(R.id.tvCartItemQty)
-                val btnMinus = itemView.findViewById<ImageView>(R.id.btnCartItemMinus)
-                val btnPlus = itemView.findViewById<ImageView>(R.id.btnCartItemPlus)
+            itemView.findViewById<TextView>(R.id.tvCartItemNama).text = cartItem.barang.nama
+            itemView.findViewById<TextView>(R.id.tvCartItemHargaUnit).text = cartItem.ringkasan()
+            itemView.findViewById<TextView>(R.id.tvCartItemTotalHarga).text =
+                (cartItem.hargaSatuan * cartItem.quantity).toRupiah()
+            itemView.findViewById<TextView>(R.id.tvCartItemQty).text = cartItem.quantity.toString()
+            itemView.findViewById<View>(R.id.vCartItemDivider).visibility =
+                if (index == cartItems.lastIndex) View.GONE else View.VISIBLE
 
-                tvNama.text = cartItem.barang.nama
-                tvHargaUnit.text = "${cartItem.barang.harga.toRupiah()} / porsi"
-                tvTotalHarga.text = (cartItem.barang.harga * cartItem.quantity).toRupiah()
-                tvQty.text = cartItem.quantity.toString()
-
-                btnMinus.setOnClickListener {
-                    CartManager.decreaseItem(cartItem.barang)
-                    renderPesanan()
-                }
-
-                btnPlus.setOnClickListener {
-                    CartManager.addItem(cartItem.barang)
-                    renderPesanan()
-                }
-
-                llCartItemsList.addView(itemView)
+            itemView.findViewById<ImageView>(R.id.btnCartItemMinus).setOnClickListener {
+                CartManager.decreaseItem(cartItem)
+                renderPesanan()
+            }
+            itemView.findViewById<ImageView>(R.id.btnCartItemPlus).setOnClickListener {
+                CartManager.increaseItem(cartItem)
+                renderPesanan()
             }
 
-            tvCartTotalItems.text = "Total ${CartManager.getTotalItemCount()} Item"
-            tvCartTotalPrice.text = CartManager.getTotalPrice().toRupiah()
+            llCartItemsList.addView(itemView)
         }
+
+        val subtotal = CartManager.getTotalPrice().toRupiah()
+        tvSubtotal.text = subtotal
+        tvBottomSubtotal.text = subtotal
     }
 }

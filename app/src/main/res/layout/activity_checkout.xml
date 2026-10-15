@@ -109,49 +109,11 @@
                     android:layout_marginBottom="12dp"
                     android:background="@color/ngopi_border" />
 
-                <!-- Items list -->
                 <LinearLayout
+                    android:id="@+id/llCheckoutItems"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Es Kopi Susu (1× · Susu segar)"
-                        android:textColor="@color/ngopi_ink"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Rp24.000"
-                        android:textColor="@color/ngopi_ink"
-                        android:textSize="13sp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Cappuccino (1× · Panas)"
-                        android:textColor="@color/ngopi_ink"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Rp28.000"
-                        android:textColor="@color/ngopi_ink"
-                        android:textSize="13sp" />
-                </LinearLayout>
+                    android:orientation="vertical" />
 
                 <View
                     android:layout_width="match_parent"
