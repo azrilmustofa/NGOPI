@@ -35,10 +35,8 @@ class MenuFragment : Fragment(R.layout.fragment_menu) {
         view.findViewById<TextView>(R.id.tvTableBadge).text =
             if (table > 0) getString(R.string.menu_table_badge, table) else getString(R.string.table_placeholder)
 
-        adapter = BarangAdapter(requireContext()) { barang ->
-            CartManager.addItem(barang)
-            Toast.makeText(requireContext(), getString(R.string.menu_added, barang.nama), Toast.LENGTH_SHORT).show()
-        }
+        // Tombol + membuka popup yang sama dengan mengetuk menu, supaya pilihan wajib (mis. susu) selalu terisi.
+        adapter = BarangAdapter(requireContext()) { barang -> DetailMenuSheet(this, barang).show() }
         tvEmpty = view.findViewById(R.id.tvEmpty)
         lvBarang = view.findViewById(R.id.lvBarang)
         lvBarang.adapter = adapter
