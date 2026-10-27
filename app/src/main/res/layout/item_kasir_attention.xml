@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    android:background="@drawable/bg_card_outline"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Top Row: Issue Title & Category Badge -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/tvAttentionName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="@color/ngopi_ink"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            tools:text="Meja 07 · Minta Kasir" />
+
+        <TextView
+            android:id="@+id/tvAttentionKindBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_badge"
+            android:paddingStart="8dp"
+            android:paddingTop="4dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="4dp"
+            android:textColor="@color/ngopi_primary"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            tools:text="BANTUAN" />
+    </LinearLayout>
+
+    <!-- Subtitle: Order Number & Relative Time -->
+    <TextView
+        android:id="@+id/tvAttentionSub"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:textColor="@color/ngopi_muted"
+        android:textSize="12sp"
+        tools:text="#NG-2841 · 2 menit lalu" />
+
+</LinearLayout>
