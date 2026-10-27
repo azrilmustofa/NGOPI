@@ -2,27 +2,36 @@ package kelompok.satu.kopiinggil
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
+import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.widget.doOnTextChanged
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.checkbox.MaterialCheckBox
-import com.google.android.material.textfield.TextInputEditText
-import com.google.android.material.textfield.TextInputLayout
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.user.UserInfo
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.put
+import java.util.UUID
 
-// Langkah 2 dari 3: ringkasan pesanan + data pemesan, lalu lanjut ke metode pembayaran.
+// Konfirmasi pesanan: ringkasan + data pemesan (dari akun, tidak diedit di sini).
+// Tombol bayar membuka pop-up Midtrans (SnapPaymentSheet) di layar ini; lunas ditentukan server.
 class CheckoutActivity : AppCompatActivity() {
 
-    private val payment = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        if (it.resultCode == RESULT_OK) finish()
-    }
+    private lateinit var tvName: TextView
+    private lateinit var tvPhone: TextView
+    private lateinit var btnPay: TextView
+    private lateinit var bannerPending: View
+
+    // Data akun yang dipakai untuk struk & bantuan.
+    private var customerName = ""
+    private var customerPhone = ""
+
+    // Satu kunci per percobaan: tap ganda atau membuka lagi pop-up memakai transaksi yang sama.
+    // Diganti baru kalau transaksi gagal/kedaluwarsa, karena transaksi lamanya tidak bisa dipakai lagi.
+    private var checkoutKey = UUID.randomUUID().toString()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,101 +48,105 @@ class CheckoutActivity : AppCompatActivity() {
         val total = subtotal + tax
 
         findViewById<TextView>(R.id.tvCheckoutSubtitle).text = "Meja %02d · Dine-in".format(CartManager.tableNumber)
-        findViewById<android.view.ViewGroup>(R.id.llCheckoutItems).bindOrderLines(CartManager.items)
+        findViewById<ViewGroup>(R.id.llCheckoutItems).bindOrderLines(CartManager.items)
         findViewById<TextView>(R.id.tvCheckoutSubtotal).text = subtotal.toRupiah()
         findViewById<TextView>(R.id.tvCheckoutTax).text = tax.toRupiah()
         findViewById<TextView>(R.id.tvCheckoutTotal).text = total.toRupiah()
         findViewById<TextView>(R.id.tvBottomTotal).text = total.toRupiah()
 
-        val tilName = findViewById<TextInputLayout>(R.id.tilCustomerName)
-        val tilPhone = findViewById<TextInputLayout>(R.id.tilCustomerPhone)
-        val etName = findViewById<TextInputEditText>(R.id.etCustomerName)
-        val etPhone = findViewById<TextInputEditText>(R.id.etCustomerPhone)
+        tvName = findViewById(R.id.tvCustomerName)
+        tvPhone = findViewById(R.id.tvCustomerPhone)
+        btnPay = findViewById(R.id.btnProceedPayment)
+        bannerPending = findViewById(R.id.bannerPending)
         val cbConsentWa = findViewById<MaterialCheckBox>(R.id.cbConsentWa)
 
-        etName.doOnTextChanged { _, _, _, _ -> tilName.error = null }
-        etPhone.doOnTextChanged { _, _, _, _ -> tilPhone.error = null }
-
-        populateCustomerInfo(etName, etPhone)
-
-        findViewById<android.view.View>(R.id.btnBack).setOnClickListener { finish() }
-        findViewById<android.view.View>(R.id.btnProceedPayment).setOnClickListener {
-            val name = etName.text?.toString().orEmpty().trim()
-            val phone = etPhone.text?.toString().orEmpty().trim()
-
-            var valid = true
-            if (name.isEmpty()) {
-                tilName.error = getString(R.string.register_error_name)
-                valid = false
+        // 1. Tampil langsung dari sesi login, 2. lalu segarkan dari server supaya data profil terbaru.
+        bindAccount(supabase.auth.currentUserOrNull())
+        lifecycleScope.launch {
+            try {
+                bindAccount(supabase.auth.retrieveUserForCurrentSession(updateSession = true))
+            } catch (_: Exception) {
+                // Pakai data sesi yang sudah tampil.
             }
-            if (phone.isEmpty()) {
-                tilPhone.error = getString(R.string.register_error_phone)
-                valid = false
+        }
+
+        findViewById<View>(R.id.btnBack).setOnClickListener { finish() }
+        btnPay.setOnClickListener {
+            if (customerName.isBlank() || customerPhone.isBlank()) {
+                Toast.makeText(this, R.string.checkout_profile_incomplete, Toast.LENGTH_LONG).show()
+                return@setOnClickListener
             }
             if (!cbConsentWa.isChecked) {
-                Toast.makeText(this, "Setujui penerimaan pesan WhatsApp untuk melanjutkan", Toast.LENGTH_SHORT).show()
-                valid = false
+                Toast.makeText(this, R.string.checkout_consent_required, Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
             }
+            startPayment()
+        }
 
-            if (!valid) return@setOnClickListener
+        renderPending()
+    }
 
-            // Sinkronkan pembaruan nama / nomor telepon ke profil akun Supabase di latar belakang
-            lifecycleScope.launch {
-                try {
-                    val fullPhone = if (phone.startsWith("+")) phone else "+62$phone"
-                    supabase.auth.updateUser {
-                        data = buildJsonObject {
-                            put("full_name", name)
-                            put("phone", fullPhone)
-                        }
-                    }
-                } catch (_: Exception) {
-                    // Abaikan kegagalan update profil agar alur pembayaran pelanggan tidak terhambat
-                }
+    // Membuat transaksi (atau memakai yang masih berjalan) lalu membuka pop-up Midtrans.
+    private fun startPayment() {
+        val existing = OrderManager.pendingPayment
+        if (existing != null) {
+            openSheet(existing.redirectUrl)
+            return
+        }
+        btnPay.isEnabled = false
+        lifecycleScope.launch {
+            try {
+                openSheet(OrderManager.createPayment(checkoutKey).redirectUrl)
+            } catch (e: Exception) {
+                android.util.Log.e("Checkout", "Gagal membuat pembayaran", e)
+                Toast.makeText(this@CheckoutActivity, e.toUserMessage(this@CheckoutActivity, R.string.err_payment_create_failed), Toast.LENGTH_LONG).show()
+            } finally {
+                btnPay.isEnabled = true
             }
-
-            payment.launch(Intent(this, MetodePembayaranActivity::class.java))
         }
     }
 
-    private fun populateCustomerInfo(etName: TextInputEditText, etPhone: TextInputEditText) {
-        fun applyData(name: String?, rawPhone: String?, email: String?) {
-            if (etName.text.isNullOrBlank()) {
-                if (!name.isNullOrBlank()) {
-                    etName.setText(name)
-                } else if (!email.isNullOrBlank()) {
-                    etName.setText(email.substringBefore("@"))
+    private fun openSheet(url: String) {
+        btnPay.isEnabled = false
+        SnapPaymentSheet(this, url) { state ->
+            btnPay.isEnabled = true
+            when (state) {
+                PaymentState.PAID -> {
+                    startActivity(Intent(this, StatusPesananActivity::class.java))
+                    finish()
                 }
+                PaymentState.FAILED -> {
+                    OrderManager.discardPending()
+                    checkoutKey = UUID.randomUUID().toString()
+                    renderPending()
+                    AlertDialog.Builder(this)
+                        .setTitle(R.string.pay_failed_title)
+                        .setMessage(R.string.pay_failed_message)
+                        .setPositiveButton(R.string.pay_failed_retry, null)
+                        .show()
+                }
+                // Pop-up ditutup sebelum selesai: transaksi tetap berjalan, bisa dilanjutkan.
+                PaymentState.PENDING -> renderPending()
             }
-            if (etPhone.text.isNullOrBlank() && !rawPhone.isNullOrBlank()) {
-                val clean = rawPhone
-                    .replace(" ", "")
-                    .replace("-", "")
-                    .removePrefix("+62")
-                    .removePrefix("62")
-                    .removePrefix("0")
-                etPhone.setText(clean)
-            }
-        }
+        }.show()
+    }
 
-        // 1. Tampilkan langsung dari cache sesi login aktif
-        val user = supabase.auth.currentUserOrNull()
+    // Ada transaksi yang belum selesai: tampilkan penanda dan ubah tombol jadi "Lanjutkan pembayaran".
+    private fun renderPending() {
+        val pending = OrderManager.pendingPayment != null
+        bannerPending.visibility = if (pending) View.VISIBLE else View.GONE
+        btnPay.setText(if (pending) R.string.checkout_btn_continue else R.string.checkout_btn_pay)
+    }
+
+    private fun bindAccount(user: UserInfo?) {
         val metadata = user?.userMetadata
-        val initialName = metadata?.get("full_name")?.jsonPrimitive?.content
-        val initialPhone = metadata?.get("phone")?.jsonPrimitive?.content
-        applyData(initialName, initialPhone, user?.email)
+        customerName = metadata?.get("full_name")?.jsonPrimitive?.content?.takeIf { it.isNotBlank() }
+            ?: user?.email.orEmpty().substringBefore("@")
+        // Sama seperti Profil: hanya angka, tanpa awalan 62/0 (prefix +62 sudah tampil di UI).
+        customerPhone = metadata?.get("phone")?.jsonPrimitive?.content.orEmpty()
+            .filter(Char::isDigit).removePrefix("62").trimStart('0')
 
-        // 2. Refresh dari server Supabase untuk memastikan data profil paling mutakhir
-        lifecycleScope.launch {
-            try {
-                val refreshedUser = supabase.auth.retrieveUserForCurrentSession(updateSession = true)
-                val refreshedMeta = refreshedUser.userMetadata
-                val latestName = refreshedMeta?.get("full_name")?.jsonPrimitive?.content
-                val latestPhone = refreshedMeta?.get("phone")?.jsonPrimitive?.content
-                applyData(latestName, latestPhone, refreshedUser.email)
-            } catch (_: Exception) {
-                // Gunakan cache yang sudah terisi
-            }
-        }
+        tvName.text = customerName
+        tvPhone.text = customerPhone.ifEmpty { getString(R.string.checkout_phone_empty) }
     }
 }

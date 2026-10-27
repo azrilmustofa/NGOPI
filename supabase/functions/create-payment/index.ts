@@ -1,11 +1,11 @@
-// Edge Function: create-payment  (Verify JWT: ON)
+// Edge Function: create-payment  (Verify JWT: OFF, login diperiksa di kode lewat auth.getUser)
 //
 // Dipanggil app saat pelanggan menekan "Bayar". Semua harga dihitung ulang di sini dari database,
 // harga dari app tidak dipercaya. Alurnya:
 //   1. cek user login + meja aktif + menu/opsi valid
 //   2. hitung subtotal, pajak, service charge dari app_settings
 //   3. buat customer_order (AWAITING_PAYMENT), order_item, order_item_option, payment_attempt
-//   4. minta Snap token ke Midtrans, simpan redirect_url, kembalikan ke app
+//   4. minta Snap token ke Midtrans, simpan redirect_url, kembalikan ke app (dibuka app sebagai pop-up)
 //
 // Secret yang dibutuhkan: MIDTRANS_SERVER_KEY (SUPABASE_URL & SUPABASE_SERVICE_ROLE_KEY sudah otomatis ada).
 

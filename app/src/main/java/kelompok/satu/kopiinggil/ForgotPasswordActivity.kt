@@ -129,7 +129,7 @@ class ForgotPasswordActivity : AppCompatActivity() {
                     Toast.makeText(this@ForgotPasswordActivity, R.string.forgot_success, Toast.LENGTH_SHORT).show()
                     openMainAndClearStack()
                 } catch (e: Exception) {
-                    Toast.makeText(this@ForgotPasswordActivity, e.localizedMessage ?: "Gagal menyimpan", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@ForgotPasswordActivity, e.toUserMessage(this@ForgotPasswordActivity, R.string.err_password_save_failed), Toast.LENGTH_LONG).show()
                 } finally {
                     btnSave.isEnabled = true
                 }
@@ -149,7 +149,7 @@ class ForgotPasswordActivity : AppCompatActivity() {
                 if (firstTime) showStep(1)
                 startResendCountdown()
             } catch (e: Exception) {
-                Toast.makeText(this@ForgotPasswordActivity, e.localizedMessage ?: "Gagal mengirim kode", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@ForgotPasswordActivity, e.toUserMessage(this@ForgotPasswordActivity, R.string.err_send_code_failed), Toast.LENGTH_LONG).show()
                 if (!firstTime) startResendCountdown()
             } finally {
                 if (firstTime) trigger.isEnabled = true

@@ -126,13 +126,17 @@
 
                 <com.google.android.material.checkbox.MaterialCheckBox
                     android:id="@+id/cbRemember"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:buttonTint="@color/ngopi_primary" />
+
+                <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/login_remember"
                     android:textColor="@color/ngopi_ink"
-                    android:textSize="12sp"
-                    app:buttonTint="@color/ngopi_primary" />
+                    android:textSize="12sp" />
 
                 <TextView
                     android:id="@+id/tvForgot"

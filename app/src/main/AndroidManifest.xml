@@ -44,11 +44,12 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
-            android:name=".MetodePembayaranActivity"
-            android:exported="false" />
-        <activity
             android:name=".StatusPesananActivity"
             android:exported="false" />
+        <activity
+            android:name=".UbahKataSandiActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".StaffHomeActivity"
             android:exported="false"

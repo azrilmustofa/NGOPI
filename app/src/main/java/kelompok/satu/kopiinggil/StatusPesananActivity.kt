@@ -20,7 +20,12 @@ class StatusPesananActivity : AppCompatActivity() {
         }
 
         findViewById<TextView>(R.id.tvOrderNumber).text = "ORDER ${order.number}"
-        findViewById<TextView>(R.id.tvStatusTitle).text = "Pesanan diproses"
+        findViewById<TextView>(R.id.tvStatusTitle).text = when (order.status) {
+            "PREPARING" -> "Sedang diracik"
+            "READY" -> "Siap diantar"
+            "COMPLETED" -> "Pesanan selesai"
+            else -> "Pesanan diproses"
+        }
         findViewById<TextView>(R.id.tvStatusSubtitle).text =
             "Meja %02d · Dibayar via %s".format(order.table, order.method.label)
         findViewById<TextView>(R.id.tvPaidTotal).text = order.total.toRupiah()

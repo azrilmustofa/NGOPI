@@ -29,6 +29,12 @@ function safeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
+function methodGroup(paymentType: string): string {
+  if (paymentType === "qris") return "QRIS";
+  if (paymentType === "bank_transfer" || paymentType === "echannel") return "VIRTUAL_ACCOUNT";
+  return "EWALLET";
+}
+
 type PaymentStatus = "PAID" | "PENDING" | "FAILED" | "CANCELLED" | "EXPIRED";
 
 function mapStatus(transactionStatus: string, fraudStatus?: string): PaymentStatus | null {
@@ -116,7 +122,8 @@ Deno.serve(async (req) => {
 
   // Pembayaran yang sudah PAID (atau direfund) tidak boleh diturunkan oleh notifikasi telat.
   const patch: Record<string, unknown> = { status: next, updated_at: new Date().toISOString() };
-  if (typeof n.payment_type === "string") patch.payment_method = n.payment_type;
+  // Simpan sebagai kelompok metode (QRIS / VIRTUAL_ACCOUNT / EWALLET), bukan payment_type mentah Midtrans.
+  if (typeof n.payment_type === "string") patch.payment_method = methodGroup(n.payment_type);
   if (next === "PAID") {
     patch.paid_at = new Date().toISOString();
     patch.paid_source = "MIDTRANS_WEBHOOK";

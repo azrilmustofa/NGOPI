@@ -78,7 +78,7 @@ class PesananFragment : Fragment(R.layout.fragment_pesanan) {
             cardActiveOrder.visibility = View.VISIBLE
 
             tvOrderNumber.text = "ORDER ${order.number}"
-            tvOrderStatusBadge.text = "Diproses"
+            tvOrderStatusBadge.text = order.statusLabel
             tvOrderSubtitle.text = "Dibayar pukul ${order.paidAt} · ${order.method.label}"
             llPesananItemsList.bindOrderLines(order.items)
             tvPesananTotal.text = order.total.toRupiah()

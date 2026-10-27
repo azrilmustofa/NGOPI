@@ -156,7 +156,7 @@ class StaffAntreanFragment : Fragment(R.layout.fragment_staff_antrean) {
                 val time = SimpleDateFormat("HH.mm", Locale.forLanguageTag("id-ID")).format(Date())
                 tvSyncText.text = getString(R.string.app_name) + " · Sinkron " + time
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Gagal memuat antrean: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), e.toUserMessage(requireContext(), R.string.err_queue_load_failed), Toast.LENGTH_LONG).show()
             }
         }
     }

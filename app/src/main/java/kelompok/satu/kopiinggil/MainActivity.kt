@@ -6,6 +6,7 @@ import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
+import android.widget.Toast
 import android.util.TypedValue
 import android.view.View
 import android.view.Window
@@ -41,7 +42,14 @@ class MainActivity : AppCompatActivity() {
         val content = result.contents ?: return@registerForActivityResult
         showLoading()
         lifecycleScope.launch {
-            val table = validateTableWithSupabase(content)
+            // Gagal memeriksa (koneksi/server) berbeda dengan QR tidak berlaku: jangan tampilkan layar QR tidak berlaku.
+            val table = try {
+                validateTableWithSupabase(content)
+            } catch (e: Exception) {
+                hideLoading()
+                Toast.makeText(this@MainActivity, e.toUserMessage(this@MainActivity, R.string.err_table_check_failed), Toast.LENGTH_LONG).show()
+                return@launch
+            }
             hideLoading()
             if (isFinishing) return@launch
             if (table == null || !table.isActive) {
@@ -124,79 +132,43 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
+    // null = QR tidak cocok dengan meja mana pun (layar QR tidak berlaku). Error koneksi/server dilempar ke pemanggil.
     private suspend fun validateTableWithSupabase(content: String): CafeTable? {
-        return try {
-            val text = content.trim().uppercase()
-            val digits = Regex("\\d+").find(text)?.value?.toIntOrNull()
-            val searchId = if (text.startsWith("TBL-")) text else {
-                digits?.let { "TBL-%02d".format(it) } ?: text
-            }
+        val text = content.trim().uppercase()
+        val digits = Regex("\\d+").find(text)?.value?.toIntOrNull()
+        val searchId = if (text.startsWith("TBL-")) text else {
+            digits?.let { "TBL-%02d".format(it) } ?: text
+        }
 
-            android.util.Log.d("MainActivity", "Scanning QR raw: '$content' -> Search ID: '$searchId'")
+        android.util.Log.d("MainActivity", "Scanning QR raw: '$content' -> Search ID: '$searchId'")
 
-            // Fetch seluruh data dari tabel cafe_table
-            val allTables = supabase.postgrest["cafe_table"]
-                .select()
-                .decodeList<CafeTable>()
+        // Fetch seluruh data dari tabel cafe_table
+        val allTables = supabase.postgrest["cafe_table"]
+            .select()
+            .decodeList<CafeTable>()
 
-            android.util.Log.d("MainActivity", "Total meja didapatkan dari Supabase: ${allTables.size}")
+        android.util.Log.d("MainActivity", "Total meja didapatkan dari Supabase: ${allTables.size}")
 
-            // Jika 0 data, berarti RLS (Row Level Security) di Supabase memblokir query publik
-            if (allTables.isEmpty()) {
-                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                    android.widget.Toast.makeText(
-                        this@MainActivity,
-                        "Supabase mengembalikan 0 data! RLS (Row Level Security) memblokir baca data. Matikan RLS atau buat Policy SELECT.",
-                        android.widget.Toast.LENGTH_LONG
-                    ).show()
-                }
-                return null
-            }
+        // 0 data biasanya berarti RLS memblokir baca cafe_table: itu masalah konfigurasi, bukan QR yang salah.
+        if (allTables.isEmpty()) {
+            error("cafe_table kosong: cek RLS / policy SELECT di Supabase")
+        }
 
-            // Pencocokan ID fleksibel
-            val matchedTable = allTables.firstOrNull { table ->
-                table.id.equals(searchId, ignoreCase = true) ||
+        // Pencocokan ID fleksibel
+        val matchedTable = allTables.firstOrNull { table ->
+            table.id.equals(searchId, ignoreCase = true) ||
                 table.id.equals(text, ignoreCase = true) ||
                 table.label.equals(content.trim(), ignoreCase = true) ||
                 (digits != null && table.tableNumber == digits)
-            }
-
-            if (matchedTable == null) {
-                val availableIds = allTables.joinToString { it.id }
-                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                    android.widget.Toast.makeText(
-                        this@MainActivity,
-                        "ID '$searchId' tidak ditemukan. ID yang ada di DB: [$availableIds]",
-                        android.widget.Toast.LENGTH_LONG
-                    ).show()
-                }
-                return null
-            }
-
-            android.util.Log.d("MainActivity", "Meja ditemukan dari Supabase: id=${matchedTable.id}, label=${matchedTable.label}, isActive=${matchedTable.isActive}")
-
-            if (!matchedTable.isActive) {
-                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                    android.widget.Toast.makeText(
-                        this@MainActivity,
-                        "Meja '${matchedTable.label}' ($searchId) sedang tidak aktif.",
-                        android.widget.Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-
-            matchedTable
-        } catch (e: Exception) {
-            android.util.Log.e("MainActivity", "Error query Supabase cafe_table", e)
-            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                android.widget.Toast.makeText(
-                    this@MainActivity,
-                    "Error Supabase: ${e.localizedMessage}",
-                    android.widget.Toast.LENGTH_LONG
-                ).show()
-            }
-            null
         }
+
+        if (matchedTable == null) {
+            android.util.Log.d("MainActivity", "QR '$searchId' tidak cocok dengan meja mana pun")
+            return null
+        }
+
+        android.util.Log.d("MainActivity", "Meja ditemukan dari Supabase: id=${matchedTable.id}, label=${matchedTable.label}, isActive=${matchedTable.isActive}")
+        return matchedTable
     }
 
     private companion object {

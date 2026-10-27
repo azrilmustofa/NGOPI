@@ -5,11 +5,18 @@ import android.view.ViewGroup
 import android.widget.TextView
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
-import io.github.jan.supabase.postgrest.rpc
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import java.net.HttpURLConnection
+import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -18,7 +25,16 @@ import java.util.TimeZone
 enum class MetodeBayar(val label: String) {
     QRIS("QRIS"),
     VIRTUAL_ACCOUNT("Virtual account"),
-    EWALLET("E-wallet"),
+    EWALLET("E-wallet");
+
+    companion object {
+        // payment_type dari Midtrans (mis. "qris", "gopay", "bank_transfer") atau nilai lama di database.
+        fun fromProvider(type: String?): MetodeBayar = when (type?.lowercase()) {
+            "gopay", "shopeepay", "dana", "ovo", "linkaja", "ewallet" -> EWALLET
+            "bank_transfer", "echannel", "permata", "bca_klikpay", "virtual_account" -> VIRTUAL_ACCOUNT
+            else -> QRIS
+        }
+    }
 }
 
 data class PlacedOrder(
@@ -30,7 +46,32 @@ data class PlacedOrder(
     val total: Int,
     val method: MetodeBayar,
     val paidAt: String,
+    val status: String = "PAID",
+) {
+    // Teks status untuk pelanggan; status server: PAID -> ACCEPTED -> PREPARING -> READY -> COMPLETED.
+    val statusLabel: String
+        get() = when (status) {
+            "PREPARING" -> "Sedang diracik"
+            "READY" -> "Siap diantar"
+            "COMPLETED" -> "Selesai"
+            else -> "Diproses"
+        }
+}
+
+// Pesanan sudah dibuat di server (AWAITING_PAYMENT) dan menunggu pembayaran Midtrans selesai.
+data class PendingPayment(
+    val orderId: String,
+    val publicId: String,
+    val redirectUrl: String,
+    val expiresAtMillis: Long,
+    val table: Int,
+    val items: List<CartItem>,
+    val subtotal: Int,
+    val tax: Int,
+    val total: Int,
 )
+
+enum class PaymentState { PENDING, PAID, FAILED }
 
 @Serializable
 private data class ItemParam(
@@ -41,18 +82,20 @@ private data class ItemParam(
 )
 
 @Serializable
-private data class CreateOrderParams(
-    @SerialName("p_table_id") val tableId: String,
-    @SerialName("p_checkout_key") val checkoutKey: String,
-    @SerialName("p_payment_method") val method: String,
-    @SerialName("p_items") val items: List<ItemParam>,
+private data class CreatePaymentParams(
+    @SerialName("table_id") val tableId: String,
+    @SerialName("checkout_key") val checkoutKey: String,
+    val items: List<ItemParam>,
 )
 
 @Serializable
-private data class CreateOrderResult(
+private data class CreatePaymentResult(
+    @SerialName("order_id") val orderId: String,
     @SerialName("public_id") val publicId: String,
+    @SerialName("redirect_url") val redirectUrl: String,
     @SerialName("subtotal_rp") val subtotal: Int,
     @SerialName("tax_rp") val tax: Int,
+    @SerialName("service_charge_rp") val service: Int = 0,
     @SerialName("total_rp") val total: Int,
 )
 
@@ -82,47 +125,137 @@ private data class OrderItemDto(
 
 @Serializable
 private data class PaymentAttemptDto(
-    @SerialName("payment_method") val paymentMethod: String = "QRIS",
+    val status: String = "",
+    @SerialName("payment_method") val paymentMethod: String? = null,
+    @SerialName("paid_at") val paidAt: String? = null,
 )
+
+class PaymentException(message: String) : Exception(message)
 
 object OrderManager {
     var lastOrder: PlacedOrder? = null
         private set
 
+    var pendingPayment: PendingPayment? = null
+        private set
+
+    private val json = Json { ignoreUnknownKeys = true }
+
+    // Sama dengan masa berlaku transaksi di create-payment (30 menit).
+    private const val PAYMENT_WINDOW_MS = 30 * 60_000L
+
+    // Pesanan AWAITING_PAYMENT / CANCELLED belum jadi pesanan: tidak ditampilkan sebagai "diproses".
+    private val PAID_STATUSES = listOf("PAID", "ACCEPTED", "PREPARING", "READY", "COMPLETED")
+
+    // Transaksi gagal/kedaluwarsa tidak bisa dilanjutkan; pembayaran berikutnya membuat transaksi baru.
+    fun discardPending() {
+        pendingPayment = null
+    }
+
     fun clear() {
         lastOrder = null
+        pendingPayment = null
     }
 
     // Perkiraan untuk tampilan checkout; angka resmi (dari app_settings) datang dari server.
     fun taxOf(subtotal: Int): Int = subtotal * 10 / 100
 
-    // checkoutKey menjaga agar coba ulang setelah gagal jaringan tidak membuat pesanan ganda.
-    suspend fun payAndPlace(method: MetodeBayar, checkoutKey: String): PlacedOrder {
+    // Membuat pesanan + transaksi Midtrans Snap (Edge Function create-payment). Pembayaran BELUM lunas di sini:
+    // status lunas hanya ditentukan webhook di server. checkoutKey menjaga agar coba ulang tidak membuat pesanan ganda
+    // (kunci yang sama mengembalikan transaksi dan redirect_url yang sama).
+    suspend fun createPayment(checkoutKey: String): PendingPayment {
         val items = CartManager.items.map { it.copy() }
-        val result = supabase.postgrest.rpc(
-            "create_order",
-            CreateOrderParams(
+        val body = json.encodeToString(
+            CreatePaymentParams(
                 tableId = CartManager.tableId,
                 checkoutKey = checkoutKey,
-                method = method.name,
                 items = items.map { item ->
                     ItemParam(item.barang.id, item.quantity, item.catatan, item.pilihan.map { it.id })
                 },
-            ),
-        ).decodeAs<CreateOrderResult>()
-        val order = PlacedOrder(
-            number = "#${result.publicId}",
+            )
+        )
+        val raw = callFunction("create-payment", body)
+        val result = try {
+            json.decodeFromString<CreatePaymentResult>(raw)
+        } catch (e: SerializationException) {
+            android.util.Log.e("OrderManager", "Respons create-payment tidak sesuai: $raw", e)
+            throw PaymentException("Respons server pembayaran tidak sesuai. Pastikan fungsi create-payment versi terbaru sudah di-deploy.")
+        }
+        val pending = PendingPayment(
+            orderId = result.orderId,
+            publicId = result.publicId,
+            redirectUrl = result.redirectUrl,
+            expiresAtMillis = System.currentTimeMillis() + PAYMENT_WINDOW_MS,
             table = CartManager.tableNumber,
             items = items,
             subtotal = result.subtotal,
-            tax = result.tax,
+            tax = result.tax + result.service,
             total = result.total,
-            method = method,
-            paidAt = SimpleDateFormat("HH.mm", Locale.forLanguageTag("id-ID")).format(Date()),
         )
-        lastOrder = order
-        CartManager.clear()
-        return order
+        pendingPayment = pending
+        return pending
+    }
+
+    // Membaca status percobaan pembayaran terakhir dari server. Kalau lunas, pesanan disimpan sebagai lastOrder
+    // dan keranjang dikosongkan.
+    suspend fun checkPayment(): PaymentState {
+        val pending = pendingPayment ?: return PaymentState.FAILED
+        val attempt = supabase.from("payment_attempt").select {
+            filter { eq("order_id", pending.orderId) }
+            order("created_at", Order.DESCENDING)
+            limit(1)
+        }.decodeList<PaymentAttemptDto>().firstOrNull() ?: return PaymentState.PENDING
+
+        android.util.Log.d("OrderManager", "cek bayar ${pending.publicId} attempt=${attempt.status}")
+        return when (attempt.status) {
+            "PAID" -> {
+                lastOrder = PlacedOrder(
+                    number = "#${pending.publicId}",
+                    table = pending.table,
+                    items = pending.items,
+                    subtotal = pending.subtotal,
+                    tax = pending.tax,
+                    total = pending.total,
+                    method = MetodeBayar.fromProvider(attempt.paymentMethod),
+                    paidAt = formatTime(attempt.paidAt),
+                )
+                pendingPayment = null
+                CartManager.clear()
+                PaymentState.PAID
+            }
+            "FAILED", "CANCELLED", "EXPIRED" -> PaymentState.FAILED
+            else -> PaymentState.PENDING
+        }
+    }
+
+    // Memanggil Edge Function dengan sesi login pelanggan; mengembalikan body JSON atau melempar PaymentException.
+    private suspend fun callFunction(name: String, body: String): String = withContext(Dispatchers.IO) {
+        val token = supabase.auth.currentAccessTokenOrNull() ?: throw PaymentException("Sesi login berakhir, silakan login ulang")
+        val conn = URL("$SUPABASE_URL/functions/v1/$name").openConnection() as HttpURLConnection
+        try {
+            conn.requestMethod = "POST"
+            conn.connectTimeout = 15_000
+            conn.readTimeout = 30_000
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.setRequestProperty("Authorization", "Bearer $token")
+            conn.setRequestProperty("apikey", SUPABASE_KEY)
+            conn.outputStream.use { it.write(body.toByteArray()) }
+
+            val ok = conn.responseCode in 200..299
+            val text = (if (ok) conn.inputStream else conn.errorStream)?.bufferedReader()?.use { it.readText() }.orEmpty()
+            if (!ok) {
+                val message = runCatching { json.parseToJsonElement(text).jsonObject["error"]?.jsonPrimitive?.content }.getOrNull()
+                throw PaymentException(message ?: "Server menolak permintaan (${conn.responseCode})")
+            }
+            text
+        } catch (e: PaymentException) {
+            throw e
+        } catch (e: Exception) {
+            throw PaymentException("Tidak dapat terhubung ke server")
+        } finally {
+            conn.disconnect()
+        }
     }
 
     suspend fun fetchLatestOrder(): PlacedOrder? {
@@ -134,7 +267,10 @@ object OrderManager {
 
         return try {
             val orders = supabase.from("customer_order").select {
-                filter { eq("owner_uid", currentUser.id) }
+                filter {
+                    eq("owner_uid", currentUser.id)
+                    isIn("status", PAID_STATUSES)
+                }
                 order("created_at", Order.DESCENDING)
                 limit(1)
             }.decodeList<OrderDto>()
@@ -145,6 +281,7 @@ object OrderManager {
             }
 
             val latest = orders.first()
+            android.util.Log.d("OrderManager", "pesanan terakhir ${latest.publicId} status=${latest.status} id=${latest.id}")
             val items = supabase.from("order_item").select {
                 filter { eq("order_id", latest.id) }
             }.decodeList<OrderItemDto>()
@@ -176,13 +313,10 @@ object OrderManager {
             val paymentMethod = try {
                 val attempts = supabase.from("payment_attempt").select {
                     filter { eq("order_id", latest.id) }
+                    order("created_at", Order.DESCENDING)
                     limit(1)
                 }.decodeList<PaymentAttemptDto>()
-                when (attempts.firstOrNull()?.paymentMethod) {
-                    "VIRTUAL_ACCOUNT" -> MetodeBayar.VIRTUAL_ACCOUNT
-                    "EWALLET" -> MetodeBayar.EWALLET
-                    else -> MetodeBayar.QRIS
-                }
+                MetodeBayar.fromProvider(attempts.firstOrNull()?.paymentMethod)
             } catch (_: Exception) {
                 MetodeBayar.QRIS
             }
@@ -196,6 +330,7 @@ object OrderManager {
                 total = latest.total,
                 method = paymentMethod,
                 paidAt = formatTime(latest.paidAt ?: latest.createdAt),
+                status = latest.status,
             )
             lastOrder = order
             order

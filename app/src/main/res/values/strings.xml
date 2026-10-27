@@ -94,7 +94,7 @@
     <string name="invalid_notice_detail">Scan ulang QR yang tersedia di meja. Jika kode masih gagal, panggil Kasir untuk membantu.</string>
     <string name="invalid_rescan">Scan ulang QR</string>
     <string name="invalid_call_cashier">Panggil Kasir</string>
-    <string name="invalid_call_cashier_todo">Fitur panggil Kasir belum dibuat</string>
+    <string name="invalid_call_cashier_todo">Panggil Kasir belum tersedia di aplikasi. Silakan datangi kasir atau panggil barista terdekat.</string>
     <string name="menu_table_badge">Meja %1$02d</string>
     <string name="menu_title">Mau ngopi apa?</string>
     <string name="menu_description">Pesan dari meja, bayar tanpa antre. Kami siapkan setelah pembayaran terverifikasi.</string>
@@ -156,7 +156,6 @@
     <string name="detail_price_extra">+ %1$s</string>
     <string name="detail_max_choice">Maksimal %1$d pilihan</string>
     <string name="detail_load_failed">Pilihan menu gagal dimuat</string>
-    <string name="payment_failed">Pesanan gagal disimpan: %1$s</string>
     <string name="payment_no_table">Meja belum terverifikasi. Scan QR meja dulu.</string>
 
     <!-- Keranjang -->
@@ -251,4 +250,76 @@
     <string name="done_card_detail">Diselesaikan pukul %1$s</string>
     <string name="done_wa_note">Struk dikirim ke WhatsApp. Jika belum sampai, hubungi Kasir.</string>
     <string name="done_btn_previous_orders">Lihat pesanan sebelumnya</string>
+
+
+    <!-- Profil: edit & ubah kata sandi -->
+    <string name="profile_edit">Edit</string>
+    <string name="profile_cancel">Batal</string>
+    <string name="profile_save">Simpan perubahan</string>
+    <string name="profile_saved">Profil diperbarui</string>
+    <string name="profile_error_name">Nama wajib diisi</string>
+    <string name="profile_error_phone">Nomor WhatsApp tidak valid</string>
+    <string name="chpw_eyebrow">KEAMANAN AKUN</string>
+    <string name="chpw_title">Ubah kata sandi</string>
+    <string name="chpw_subtitle">Masukkan kata sandi yang sekarang, lalu buat kata sandi baru.</string>
+    <string name="chpw_current_label">Kata sandi sekarang</string>
+    <string name="chpw_current_hint">Masukkan kata sandi sekarang</string>
+    <string name="chpw_new_label">Kata sandi baru</string>
+    <string name="chpw_confirm_label">Ulangi kata sandi baru</string>
+    <string name="chpw_confirm_hint">Ketik ulang kata sandi baru</string>
+    <string name="chpw_forgot">Lupa kata sandi sekarang?</string>
+    <string name="chpw_note">Kata sandi baru harus berbeda dari yang sekarang, minimal 8 karakter dengan kombinasi huruf dan angka.</string>
+    <string name="chpw_error_current_empty">Isi kata sandi sekarang</string>
+    <string name="chpw_error_current_wrong">Kata sandi sekarang salah</string>
+    <string name="chpw_error_same">Kata sandi baru harus berbeda dari yang sekarang</string>
+    <string name="chpw_error_session">Sesi login tidak ditemukan, silakan login ulang</string>
+
+    <string name="checkout_from_account">DARI AKUN</string>
+    <string name="checkout_account_hint">Data ini diambil dari akunmu. Untuk mengubahnya, buka tab Profil.</string>
+    <string name="checkout_phone_empty">Belum diisi · lengkapi di Profil</string>
+    <string name="checkout_profile_incomplete">Nama dan nomor WhatsApp di akunmu belum lengkap. Lengkapi dulu di tab Profil.</string>
+
+    <!-- Pop-up pembayaran Midtrans -->
+    <string name="snap_title">Pembayaran</string>
+    <string name="snap_close">Tutup</string>
+    <string name="snap_app_missing">Aplikasi pembayaran tidak ditemukan di perangkat ini</string>
+    <string name="checkout_btn_continue">Lanjutkan pembayaran</string>
+    <string name="checkout_pending_note">Pembayaran belum selesai. Lanjutkan untuk membayar, atau tunggu konfirmasi jika kamu sudah membayar.</string>
+    <string name="pay_failed_title">Pembayaran belum berhasil</string>
+    <string name="pay_failed_message">Transaksi belum tercatat lunas atau sudah kedaluwarsa, jadi pesanan tidak masuk ke dapur. Coba bayar lagi untuk membuat transaksi baru.</string>
+    <string name="pay_failed_retry">Coba bayar lagi</string>
+    <string name="download_saved_image">QR disimpan di Galeri (Pictures/NGOPI). Buka dari aplikasi e-wallet untuk membayar.</string>
+    <string name="download_saved_file">File disimpan di folder Download/NGOPI</string>
+    <string name="download_started">Mengunduh… cek notifikasi</string>
+    <string name="download_failed">Gagal mengunduh file</string>
+    <string name="image_url_copied">Alamat gambar disalin</string>
+
+    <!-- Pesan error & info umum -->
+    <string name="err_network">Tidak ada koneksi internet. Periksa jaringan lalu coba lagi.</string>
+    <string name="err_login_invalid">Email atau kata sandi salah.</string>
+    <string name="err_email_taken">Email ini sudah terdaftar. Silakan masuk.</string>
+    <string name="err_email_unconfirmed">Email belum dikonfirmasi. Cek kotak masuk emailmu.</string>
+    <string name="err_rate_limit">Terlalu sering mencoba. Tunggu sebentar lalu coba lagi.</string>
+    <string name="err_same_password">Kata sandi baru harus berbeda dari kata sandi lama.</string>
+    <string name="err_weak_password">Kata sandi terlalu lemah. Gunakan minimal 8 karakter dengan huruf dan angka.</string>
+    <string name="err_session">Sesi login berakhir. Silakan masuk lagi.</string>
+    <string name="err_otp">Kode salah atau sudah kedaluwarsa.</string>
+    <string name="err_login_failed">Gagal masuk. Coba lagi.</string>
+    <string name="err_register_failed">Pendaftaran gagal. Coba lagi.</string>
+    <string name="err_send_code_failed">Kode gagal dikirim. Coba lagi.</string>
+    <string name="err_password_save_failed">Kata sandi gagal disimpan. Coba lagi.</string>
+    <string name="err_password_check_failed">Kata sandi sekarang gagal diperiksa. Coba lagi.</string>
+    <string name="err_profile_save_failed">Profil gagal disimpan. Coba lagi.</string>
+    <string name="err_payment_create_failed">Pembayaran belum bisa dibuat. Coba lagi.</string>
+    <string name="err_menu_load_failed">Menu gagal dimuat. Periksa koneksi lalu buka lagi.</string>
+    <string name="err_queue_load_failed">Antrean pesanan gagal dimuat. Coba lagi.</string>
+    <string name="err_table_check_failed">QR meja belum bisa diperiksa. Periksa koneksi lalu scan ulang.</string>
+    <string name="login_success">Berhasil masuk</string>
+    <string name="register_success">Akun berhasil dibuat</string>
+    <string name="staff_welcome">Selamat datang, %1$s</string>
+    <string name="staff_inactive">Akun staf %1$s sedang dinonaktifkan. Hubungi pemilik kafe.</string>
+    <string name="checkout_consent_required">Centang persetujuan pesan WhatsApp untuk melanjutkan</string>
+    <string name="profile_help_info">Butuh bantuan? Panggil Kasir atau barista terdekat dari mejamu.</string>
+    <string name="profile_terms_info">Syarat &amp; Kebijakan Privasi akan segera tersedia.</string>
+    <string name="staff_history_soon">Riwayat barista belum tersedia</string>
 </resources>

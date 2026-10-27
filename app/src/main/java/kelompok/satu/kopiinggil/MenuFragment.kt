@@ -66,7 +66,7 @@ class MenuFragment : Fragment(R.layout.fragment_menu) {
                     render()
                 }
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Gagal memuat: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), e.toUserMessage(requireContext(), R.string.err_menu_load_failed), Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -113,7 +113,8 @@ class MenuFragment : Fragment(R.layout.fragment_menu) {
                 textSize = 12f
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
                 gravity = android.view.Gravity.CENTER
-                setPadding((14 * dp).toInt(), 0, (14 * dp).toInt(), 0)
+                maxLines = 1
+                setPadding((4 * dp).toInt(), 0, (4 * dp).toInt(), 0)
                 setOnClickListener {
                     kategori = item
                     render()
@@ -121,7 +122,7 @@ class MenuFragment : Fragment(R.layout.fragment_menu) {
             }
             container.addView(
                 chip,
-                LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, (33 * dp).toInt()).apply {
+                LinearLayout.LayoutParams(0, (33 * dp).toInt(), 1f).apply {
                     marginEnd = (8 * dp).toInt()
                 },
             )

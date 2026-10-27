@@ -32,7 +32,7 @@ class StaffHomeActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_staff_riwayat -> {
-                    Toast.makeText(this, "Halaman Riwayat Barista", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, R.string.staff_history_soon, Toast.LENGTH_SHORT).show()
                     true
                 }
                 R.id.nav_staff_akun -> {

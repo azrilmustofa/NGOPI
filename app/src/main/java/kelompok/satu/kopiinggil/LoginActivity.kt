@@ -75,10 +75,10 @@ class LoginActivity : AppCompatActivity() {
                         this.password = password
                     }
                     setRememberMe(cbRemember.isChecked)
-                    Toast.makeText(this@LoginActivity, "Login berhasil!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@LoginActivity, R.string.login_success, Toast.LENGTH_SHORT).show()
                     checkRoleAndNavigate()
                 } catch (e: Exception) {
-                    Toast.makeText(this@LoginActivity, e.localizedMessage ?: "Login gagal", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@LoginActivity, e.toUserMessage(this@LoginActivity, R.string.err_login_failed), Toast.LENGTH_LONG).show()
                 } finally {
                     btnLogin.isEnabled = true
                 }
@@ -113,14 +113,8 @@ class LoginActivity : AppCompatActivity() {
 
             android.util.Log.d("LoginActivity", "Query staff_user count: ${staffList.size}")
 
+            // Bukan staf = pelanggan biasa, langsung ke alur pelanggan.
             if (staffList.isEmpty()) {
-                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                    android.widget.Toast.makeText(
-                        this@LoginActivity,
-                        "UID ${currentUser.id.take(8)}... tidak ada di staff_user. Cek RLS / UUID di Supabase!",
-                        android.widget.Toast.LENGTH_LONG
-                    ).show()
-                }
                 openMainAndClearStack()
                 return
             }
@@ -132,7 +126,7 @@ class LoginActivity : AppCompatActivity() {
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                     android.widget.Toast.makeText(
                         this@LoginActivity,
-                        "Selamat datang ${staff.name}!",
+                        getString(R.string.staff_welcome, staff.name),
                         android.widget.Toast.LENGTH_SHORT
                     ).show()
                 }
@@ -141,7 +135,7 @@ class LoginActivity : AppCompatActivity() {
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                     android.widget.Toast.makeText(
                         this@LoginActivity,
-                        "Akun staff '${staff.name}' sedang tidak aktif",
+                        getString(R.string.staff_inactive, staff.name),
                         android.widget.Toast.LENGTH_SHORT
                     ).show()
                 }
@@ -149,13 +143,6 @@ class LoginActivity : AppCompatActivity() {
             }
         } catch (e: Exception) {
             android.util.Log.e("LoginActivity", "Error query staff_user", e)
-            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                android.widget.Toast.makeText(
-                    this@LoginActivity,
-                    "Error cek role staff: ${e.localizedMessage}",
-                    android.widget.Toast.LENGTH_LONG
-                ).show()
-            }
             openMainAndClearStack()
         }
     }

@@ -102,10 +102,10 @@ class RegisterActivity : AppCompatActivity() {
                         }
                     }
                     setRememberMe(true)
-                    Toast.makeText(this@RegisterActivity, "Pendaftaran berhasil!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@RegisterActivity, R.string.register_success, Toast.LENGTH_SHORT).show()
                     openMainAndClearStack()
                 } catch (e: Exception) {
-                    Toast.makeText(this@RegisterActivity, e.localizedMessage ?: "Registrasi gagal", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@RegisterActivity, e.toUserMessage(this@RegisterActivity, R.string.err_register_failed), Toast.LENGTH_LONG).show()
                 } finally {
                     btnRegister.isEnabled = true
                 }
