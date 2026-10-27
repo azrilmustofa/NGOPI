@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_staff_antrean"
+        android:icon="@drawable/ic_coffee"
+        android:title="Antrean" />
+    <item
+        android:id="@+id/nav_staff_riwayat"
+        android:icon="@drawable/ic_receipt"
+        android:title="Riwayat" />
+    <item
+        android:id="@+id/nav_staff_akun"
+        android:icon="@drawable/ic_person"
+        android:title="Akun" />
+</menu>

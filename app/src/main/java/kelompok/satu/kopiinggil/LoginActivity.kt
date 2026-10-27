@@ -12,6 +12,7 @@ import com.google.android.material.textfield.TextInputLayout
 import io.github.jan.supabase.auth.SignOutScope
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
@@ -28,7 +29,7 @@ class LoginActivity : AppCompatActivity() {
                 supabase.auth.awaitInitialization()
                 if (supabase.auth.currentSessionOrNull() != null) {
                     if (isRememberMe()) {
-                        openMainAndClearStack()
+                        checkRoleAndNavigate()
                         return@launch
                     }
                     supabase.auth.signOut(SignOutScope.LOCAL)
@@ -75,7 +76,7 @@ class LoginActivity : AppCompatActivity() {
                     }
                     setRememberMe(cbRemember.isChecked)
                     Toast.makeText(this@LoginActivity, "Login berhasil!", Toast.LENGTH_SHORT).show()
-                    openMainAndClearStack()
+                    checkRoleAndNavigate()
                 } catch (e: Exception) {
                     Toast.makeText(this@LoginActivity, e.localizedMessage ?: "Login gagal", Toast.LENGTH_LONG).show()
                 } finally {
@@ -92,6 +93,70 @@ class LoginActivity : AppCompatActivity() {
                 Intent(this, ForgotPasswordActivity::class.java)
                     .putExtra(ForgotPasswordActivity.EXTRA_EMAIL, etIdentifier.text?.toString().orEmpty().trim())
             )
+        }
+    }
+
+    private suspend fun checkRoleAndNavigate() {
+        val currentUser = supabase.auth.currentUserOrNull()
+        if (currentUser == null) {
+            android.util.Log.d("LoginActivity", "currentUser is null -> openMain")
+            openMainAndClearStack()
+            return
+        }
+
+        android.util.Log.d("LoginActivity", "Checking role for UID: ${currentUser.id}")
+
+        try {
+            val staffList = supabase.postgrest["staff_user"].select {
+                filter { eq("uid", currentUser.id) }
+            }.decodeList<StaffUser>()
+
+            android.util.Log.d("LoginActivity", "Query staff_user count: ${staffList.size}")
+
+            if (staffList.isEmpty()) {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    android.widget.Toast.makeText(
+                        this@LoginActivity,
+                        "UID ${currentUser.id.take(8)}... tidak ada di staff_user. Cek RLS / UUID di Supabase!",
+                        android.widget.Toast.LENGTH_LONG
+                    ).show()
+                }
+                openMainAndClearStack()
+                return
+            }
+
+            val staff = staffList.first()
+            android.util.Log.d("LoginActivity", "Found staff: name=${staff.name}, role=${staff.role}, isActive=${staff.isActive}")
+
+            if (staff.isActive) {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    android.widget.Toast.makeText(
+                        this@LoginActivity,
+                        "Selamat datang ${staff.name}!",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                }
+                openStaffDashboardAndClearStack()
+            } else {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    android.widget.Toast.makeText(
+                        this@LoginActivity,
+                        "Akun staff '${staff.name}' sedang tidak aktif",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                }
+                openMainAndClearStack()
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("LoginActivity", "Error query staff_user", e)
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                android.widget.Toast.makeText(
+                    this@LoginActivity,
+                    "Error cek role staff: ${e.localizedMessage}",
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
+            }
+            openMainAndClearStack()
         }
     }
 }

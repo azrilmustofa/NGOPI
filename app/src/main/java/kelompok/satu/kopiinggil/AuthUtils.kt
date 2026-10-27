@@ -26,6 +26,15 @@ fun AppCompatActivity.openMainAndClearStack() {
     )
 }
 
+fun AppCompatActivity.openStaffDashboardAndClearStack() {
+    CartManager.clear()
+    OrderManager.clear()
+    startActivity(
+        Intent(this, StaffHomeActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+    )
+}
+
 fun String.isValidEmail(): Boolean = Patterns.EMAIL_ADDRESS.matcher(this).matches()
 
 fun String.isValidPhone(): Boolean = replace(Regex("[\\s-]"), "").matches(Regex("\\d{9,13}"))
