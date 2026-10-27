@@ -229,6 +229,7 @@
                     android:textStyle="bold" />
 
                 <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilCustomerName"
                     style="@style/Widget.Ngopi.TextInput"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -253,6 +254,7 @@
                     android:textStyle="bold" />
 
                 <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilCustomerPhone"
                     style="@style/Widget.Ngopi.TextInput"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
