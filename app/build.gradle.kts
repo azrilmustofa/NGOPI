@@ -11,8 +11,8 @@ android {
 
     defaultConfig {
         applicationId = "kelompok.satu.kopiinggil"
-        minSdk = 30
-        targetSdk = 37
+        minSdk = 29
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 

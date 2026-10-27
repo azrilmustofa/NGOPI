@@ -3,13 +3,17 @@ package kelompok.satu.kopiinggil
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.TextView
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.postgrest.rpc
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 enum class MetodeBayar(val label: String) {
     QRIS("QRIS"),
@@ -52,11 +56,42 @@ private data class CreateOrderResult(
     @SerialName("total_rp") val total: Int,
 )
 
-// Pembayaran belum terhubung ke provider: bayar langsung dianggap lunas, tetapi pesanan disimpan
-// ke Supabase lewat function create_order (lihat supabase/create_order.sql).
+@Serializable
+private data class OrderDto(
+    val id: String,
+    @SerialName("public_id") val publicId: String,
+    @SerialName("table_id") val tableId: String = "",
+    val status: String = "",
+    @SerialName("subtotal_rp") val subtotal: Int = 0,
+    @SerialName("tax_rp") val tax: Int = 0,
+    @SerialName("total_rp") val total: Int = 0,
+    @SerialName("paid_at") val paidAt: String? = null,
+    @SerialName("created_at") val createdAt: String? = null,
+)
+
+@Serializable
+private data class OrderItemDto(
+    val id: String,
+    @SerialName("order_id") val orderId: String,
+    @SerialName("name_snapshot") val nameSnapshot: String,
+    @SerialName("unit_price_rp") val unitPrice: Int = 0,
+    val quantity: Int = 1,
+    val note: String? = null,
+    @SerialName("line_total_rp") val lineTotal: Int = 0,
+)
+
+@Serializable
+private data class PaymentAttemptDto(
+    @SerialName("payment_method") val paymentMethod: String = "QRIS",
+)
+
 object OrderManager {
     var lastOrder: PlacedOrder? = null
         private set
+
+    fun clear() {
+        lastOrder = null
+    }
 
     // Perkiraan untuk tampilan checkout; angka resmi (dari app_settings) datang dari server.
     fun taxOf(subtotal: Int): Int = subtotal * 10 / 100
@@ -88,6 +123,102 @@ object OrderManager {
         lastOrder = order
         CartManager.clear()
         return order
+    }
+
+    suspend fun fetchLatestOrder(): PlacedOrder? {
+        val currentUser = supabase.auth.currentUserOrNull()
+        if (currentUser == null) {
+            lastOrder = null
+            return null
+        }
+
+        return try {
+            val orders = supabase.from("customer_order").select {
+                filter { eq("owner_uid", currentUser.id) }
+                order("created_at", Order.DESCENDING)
+                limit(1)
+            }.decodeList<OrderDto>()
+
+            if (orders.isEmpty()) {
+                lastOrder = null
+                return null
+            }
+
+            val latest = orders.first()
+            val items = supabase.from("order_item").select {
+                filter { eq("order_id", latest.id) }
+            }.decodeList<OrderItemDto>()
+
+            val cartItems = items.map { itemDto ->
+                CartItem(
+                    barang = DataBarang(
+                        id = itemDto.id,
+                        nama = itemDto.nameSnapshot,
+                        harga = itemDto.unitPrice,
+                    ),
+                    quantity = itemDto.quantity,
+                    catatan = itemDto.note.orEmpty(),
+                )
+            }
+
+            val tableNum = if (latest.tableId.isNotEmpty()) {
+                try {
+                    supabase.from("cafe_table").select {
+                        filter { eq("id", latest.tableId) }
+                    }.decodeSingleOrNull<CafeTable>()?.tableNumber ?: CartManager.tableNumber
+                } catch (_: Exception) {
+                    CartManager.tableNumber
+                }
+            } else {
+                CartManager.tableNumber
+            }
+
+            val paymentMethod = try {
+                val attempts = supabase.from("payment_attempt").select {
+                    filter { eq("order_id", latest.id) }
+                    limit(1)
+                }.decodeList<PaymentAttemptDto>()
+                when (attempts.firstOrNull()?.paymentMethod) {
+                    "VIRTUAL_ACCOUNT" -> MetodeBayar.VIRTUAL_ACCOUNT
+                    "EWALLET" -> MetodeBayar.EWALLET
+                    else -> MetodeBayar.QRIS
+                }
+            } catch (_: Exception) {
+                MetodeBayar.QRIS
+            }
+
+            val order = PlacedOrder(
+                number = "#${latest.publicId}",
+                table = tableNum,
+                items = cartItems,
+                subtotal = latest.subtotal,
+                tax = latest.tax,
+                total = latest.total,
+                method = paymentMethod,
+                paidAt = formatTime(latest.paidAt ?: latest.createdAt),
+            )
+            lastOrder = order
+            order
+        } catch (e: Exception) {
+            lastOrder
+        }
+    }
+
+    private fun formatTime(isoString: String?): String {
+        if (isoString.isNullOrBlank()) return SimpleDateFormat("HH.mm", Locale.forLanguageTag("id-ID")).format(Date())
+        return try {
+            val parser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).apply {
+                timeZone = TimeZone.getTimeZone("UTC")
+            }
+            val clean = isoString.substringBefore(".").substringBefore("+").substringBefore("Z")
+            val date = parser.parse(clean)
+            val formatter = SimpleDateFormat("HH.mm", Locale.forLanguageTag("id-ID")).apply {
+                timeZone = TimeZone.getDefault()
+            }
+            formatter.format(date ?: Date())
+        } catch (_: Exception) {
+            SimpleDateFormat("HH.mm", Locale.forLanguageTag("id-ID")).format(Date())
+        }
     }
 }
 

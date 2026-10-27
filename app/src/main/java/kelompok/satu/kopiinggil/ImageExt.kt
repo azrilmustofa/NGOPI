@@ -1,28 +1,26 @@
 package kelompok.satu.kopiinggil
 
-import android.content.res.ColorStateList
 import android.widget.ImageView
-import androidx.core.content.ContextCompat
 import coil.dispose
 import coil.load
 
-// Muat foto dari url; jika kosong atau gagal dimuat, tampil ikon kopi sebagai placeholder.
-fun ImageView.loadFoto(url: String?, placeholderPaddingDp: Int) {
+// Muat foto dari url secara konsisten dengan ukuran dan scaleType tetap.
+fun ImageView.loadFoto(url: String?, isDetail: Boolean = false) {
     dispose()
-    showPlaceholder(placeholderPaddingDp)
-    if (url.isNullOrBlank()) return
+    setPadding(0, 0, 0, 0)
+    imageTintList = null
+    scaleType = ImageView.ScaleType.CENTER_CROP
+
+    val placeholderRes = if (isDetail) R.drawable.drawable_detail_placeholder else R.drawable.drawable_menu_placeholder
+
+    if (url.isNullOrBlank()) {
+        setImageResource(placeholderRes)
+        return
+    }
+
     load(url) {
         crossfade(true)
-        listener(onSuccess = { _, _ ->
-            setPadding(0, 0, 0, 0)
-            imageTintList = null
-        })
+        placeholder(placeholderRes)
+        error(placeholderRes)
     }
-}
-
-private fun ImageView.showPlaceholder(paddingDp: Int) {
-    val pad = (paddingDp * resources.displayMetrics.density).toInt()
-    setPadding(pad, pad, pad, pad)
-    imageTintList = ColorStateList.valueOf(ContextCompat.getColor(context, R.color.ngopi_primary))
-    setImageResource(R.drawable.ic_coffee)
 }

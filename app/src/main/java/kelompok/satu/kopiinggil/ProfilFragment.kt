@@ -73,6 +73,7 @@ class ProfilFragment : Fragment(R.layout.fragment_profil) {
                         } catch (_: Exception) {
                         }
                         CartManager.clear()
+                        OrderManager.clear()
                         val intent = Intent(requireContext(), LoginActivity::class.java).apply {
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                         }

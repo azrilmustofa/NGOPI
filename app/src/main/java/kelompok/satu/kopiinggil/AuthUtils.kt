@@ -18,6 +18,8 @@ fun AppCompatActivity.applyEdgeToEdge(rootId: Int) {
 }
 
 fun AppCompatActivity.openMainAndClearStack() {
+    CartManager.clear()
+    OrderManager.clear()
     startActivity(
         Intent(this, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)

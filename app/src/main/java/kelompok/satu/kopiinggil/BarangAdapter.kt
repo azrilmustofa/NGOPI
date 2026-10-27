@@ -34,12 +34,8 @@ class BarangAdapter(
         holder.deskripsi.text = barang.deskripsi
         holder.harga.text = barang.harga.toRupiah()
         holder.tambah.setOnClickListener { onTambah(barang) }
-        holder.foto.loadFoto(barang.photoUrl, PLACEHOLDER_PADDING_DP)
+        holder.foto.loadFoto(barang.photoUrl)
         return view
-    }
-
-    private companion object {
-        const val PLACEHOLDER_PADDING_DP = 20
     }
 
     private class Holder(view: View) {

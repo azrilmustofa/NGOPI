@@ -38,7 +38,7 @@ class DetailMenuSheet(private val fragment: Fragment, private val barang: DataBa
     private var loadJob: Job? = null
 
     fun show() {
-        sheet.findViewById<ImageView>(R.id.ivFoto).loadFoto(barang.photoUrl, PLACEHOLDER_PADDING_DP)
+        sheet.findViewById<ImageView>(R.id.ivFoto).loadFoto(barang.photoUrl, isDetail = true)
         sheet.findViewById<TextView>(R.id.tvNama).text = barang.nama
         sheet.findViewById<TextView>(R.id.tvHarga).text = barang.harga.toRupiah()
         sheet.findViewById<TextView>(R.id.tvDeskripsi).apply {
@@ -203,12 +203,12 @@ class DetailMenuSheet(private val fragment: Fragment, private val barang: DataBa
         if (!lengkap()) return
         val catatan = sheet.findViewById<EditText>(R.id.etCatatan).text?.toString().orEmpty().trim()
         CartManager.addItem(barang, qty, opsiDipilih(), catatan)
+        (fragment.activity as? HomeActivity)?.updateCartBadge()
         Toast.makeText(context, context.getString(R.string.menu_added, barang.nama), Toast.LENGTH_SHORT).show()
         dialog.dismiss()
     }
 
     private companion object {
-        const val PLACEHOLDER_PADDING_DP = 60
         const val TINGGI_SHEET = 0.92f
         const val MAKS_JUMLAH = 99
     }

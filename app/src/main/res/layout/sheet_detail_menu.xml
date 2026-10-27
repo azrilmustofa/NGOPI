@@ -61,9 +61,9 @@
                 android:id="@+id/ivFoto"
                 android:layout_width="match_parent"
                 android:layout_height="205dp"
-                android:background="@drawable/bg_photo_placeholder"
                 android:contentDescription="@null"
                 android:scaleType="centerCrop"
+                android:src="@drawable/drawable_detail_placeholder"
                 app:shapeAppearanceOverlay="@style/ShapeAppearance.Ngopi.Photo" />
 
             <LinearLayout

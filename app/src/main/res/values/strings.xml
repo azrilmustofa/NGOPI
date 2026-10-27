@@ -115,6 +115,7 @@
     <string name="menu_added">%1$s ditambahkan</string>
     <string name="menu_add_cd">Tambah ke pesanan</string>
     <string name="nav_menu">Menu</string>
+    <string name="nav_cart">Keranjang</string>
     <string name="nav_orders">Pesanan</string>
     <string name="nav_help">Bantuan</string>
     <string name="nav_profile">Profil</string>
