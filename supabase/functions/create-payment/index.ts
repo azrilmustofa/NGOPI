@@ -3,8 +3,9 @@
 // Dipanggil app saat pelanggan menekan "Bayar". Semua harga dihitung ulang di sini dari database,
 // harga dari app tidak dipercaya. Alurnya:
 //   1. cek user login + meja aktif + menu/opsi valid
-//   2. hitung subtotal, pajak, service charge dari app_settings
-//   3. buat customer_order (AWAITING_PAYMENT), order_item, order_item_option, payment_attempt
+//   2. hitung subtotal (setelah promo), pajak, service charge dari app_settings
+//   3. buat customer_order (AWAITING_PAYMENT), order_item, order_item_option, private_customer (nama, WA,
+//      persetujuan), payment_attempt
 //   4. minta Snap token ke Midtrans, simpan redirect_url, kembalikan ke app (dibuka app sebagai pop-up)
 //
 // Secret yang dibutuhkan: MIDTRANS_SERVER_KEY (SUPABASE_URL & SUPABASE_SERVICE_ROLE_KEY sudah otomatis ada).
@@ -24,7 +25,11 @@ const PAYMENT_WINDOW_MINUTES = 30;
 const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
 type ItemInput = { menu_item_id: string; quantity: number; note?: string; option_ids?: string[] };
-type Body = { table_id: string; checkout_key: string; items: ItemInput[] };
+// Persetujuan dari Checkout. Nama & WA tidak dikirim app: diambil dari akun yang login (customerFromAccount).
+type Body = { table_id: string; checkout_key: string; items: ItemInput[]; consent_wa: boolean; consent_promo?: boolean };
+
+// Versi teks persetujuan di Checkout; naikkan kalau kalimat persetujuannya diubah.
+const CONSENT_VERSION = "checkout-wa-v1";
 
 class HttpError extends Error {
   constructor(public status: number, message: string) {
@@ -50,12 +55,26 @@ function newPublicId(): string {
   return "NG-" + Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
 }
 
-async function authUser(req: Request): Promise<string> {
+type AuthUser = { id: string; email?: string; user_metadata?: Record<string, unknown> };
+
+async function authUser(req: Request): Promise<AuthUser> {
   const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
   if (!token) throw new HttpError(401, "Belum login");
   const { data, error } = await admin.auth.getUser(token);
   if (error || !data.user) throw new HttpError(401, "Sesi tidak valid, silakan login ulang");
-  return data.user.id;
+  return data.user;
+}
+
+// Data pemesan untuk struk & bantuan, dari user_metadata akun (diisi saat Register / diubah di Profil).
+// Profil menyimpan nomor tanpa awalan (mis. 87866726834); di sini dinormalkan ke E.164 (+6287866726834).
+function customerFromAccount(user: AuthUser): { name: string; phoneE164: string } {
+  const meta = user.user_metadata ?? {};
+  const fullName = typeof meta.full_name === "string" ? meta.full_name.trim() : "";
+  const name = (fullName || (user.email ?? "").split("@")[0]).slice(0, 100);
+  const digits = String(meta.phone ?? "").replace(/\D/g, "").replace(/^62/, "").replace(/^0+/, "");
+  if (!name) throw new HttpError(400, "Nama di akunmu belum diisi. Lengkapi dulu di tab Profil.");
+  if (!/^\d{8,13}$/.test(digits)) throw new HttpError(400, "Nomor WhatsApp di akunmu belum lengkap. Lengkapi dulu di tab Profil.");
+  return { name, phoneE164: "+62" + digits };
 }
 
 function parseBody(raw: any): Body {
@@ -70,6 +89,8 @@ function parseBody(raw: any): Body {
     if (it.note != null && typeof it.note !== "string") throw bad();
     if (it.option_ids != null && (!Array.isArray(it.option_ids) || it.option_ids.some((o: unknown) => typeof o !== "string"))) throw bad();
   }
+  if (raw.consent_wa !== true) throw new HttpError(400, "Persetujuan pesan WhatsApp diperlukan");
+  if (raw.consent_promo != null && typeof raw.consent_promo !== "boolean") throw bad();
   return raw as Body;
 }
 
@@ -103,13 +124,46 @@ async function existingResponse(uid: string, checkoutKey: string) {
   };
 }
 
+// Promo yang sedang berlaku per menu (tabel promo). Potongan dihitung dari harga dasar menu, tidak termasuk opsi;
+// kalau ada beberapa promo untuk satu menu, diambil potongan terbesar. Gagal dibaca = harga normal.
+// Aturan ini harus sama di quote-cart/index.ts dan create-payment/index.ts.
+type Discount = { promoId: string; perUnit: number };
+async function loadDiscounts(basePrices: Map<string, number>): Promise<Map<string, Discount>> {
+  const result = new Map<string, Discount>();
+  if (!basePrices.size) return result;
+  const now = new Date().toISOString();
+  const { data, error } = await admin
+    .from("promo")
+    .select("id, menu_item_id, discount_type, discount_value")
+    .in("menu_item_id", [...basePrices.keys()])
+    .eq("is_active", true)
+    .lte("starts_at", now)
+    .gt("ends_at", now);
+  if (error) {
+    console.error("promo", error);
+    return result;
+  }
+  for (const p of data ?? []) {
+    const base = basePrices.get(p.menu_item_id as string) ?? 0;
+    const value = p.discount_value as number;
+    const perUnit = Math.min(base, p.discount_type === "PERCENT" ? Math.round((base * value) / 100) : value);
+    const best = result.get(p.menu_item_id as string);
+    if (perUnit > 0 && (!best || perUnit > best.perUnit)) result.set(p.menu_item_id as string, { promoId: p.id as string, perUnit });
+  }
+  return result;
+}
+
 async function handle(req: Request) {
   if (!MIDTRANS_SERVER_KEY) throw new HttpError(500, "MIDTRANS_SERVER_KEY belum diatur");
-  const uid = await authUser(req);
+  const user = await authUser(req);
+  const uid = user.id;
   const body = parseBody(await req.json().catch(() => null));
 
   const again = await existingResponse(uid, body.checkout_key);
   if (again) return again;
+
+  // Dicek sebelum pesanan dibuat: akun tanpa nama/WA ditolak dengan pesan untuk melengkapi Profil.
+  const customer = customerFromAccount(user);
 
   // --- meja ---
   const tableRes = await admin.from("cafe_table").select("id").eq("id", body.table_id).eq("is_active", true).maybeSingle();
@@ -126,6 +180,7 @@ async function handle(req: Request) {
     const m = menuById.get(id);
     if (!m || !m.is_active || !m.is_available) throw new HttpError(400, `Menu tidak tersedia: ${m?.name ?? id}`);
   }
+  const discounts = await loadDiscounts(new Map(menuRows.map((m) => [m.id as string, m.base_price_rp as number])));
 
   // --- opsi: grup yang menempel ke tiap menu, aturan min/max, dan harga tambahan ---
   const optionIds = [...new Set(body.items.flatMap((i) => i.option_ids ?? []))];
@@ -158,6 +213,7 @@ async function handle(req: Request) {
     menuItemId: string;
     name: string;
     unitPrice: number;
+    discount: Discount | undefined;
     quantity: number;
     note: string | null;
     chosen: { id: string; groupName: string; name: string; delta: number }[];
@@ -189,12 +245,14 @@ async function handle(req: Request) {
         throw new HttpError(400, `Pilihan "${g.name}" untuk ${menu.name} belum sesuai aturan`);
       }
     }
-    const unitPrice = (menu.base_price_rp as number) + chosen.reduce((s, c) => s + c.delta, 0);
+    const discount = discounts.get(it.menu_item_id);
+    const unitPrice = (menu.base_price_rp as number) - (discount?.perUnit ?? 0) + chosen.reduce((s, c) => s + c.delta, 0);
     return {
       id: crypto.randomUUID(),
       menuItemId: it.menu_item_id,
       name: menu.name as string,
       unitPrice,
+      discount,
       quantity: it.quantity,
       note: it.note?.trim() ? it.note.trim().slice(0, 300) : null,
       chosen,
@@ -207,6 +265,8 @@ async function handle(req: Request) {
     "Pengaturan pajak belum ada",
   );
   const subtotal = lines.reduce((s, l) => s + l.unitPrice * l.quantity, 0);
+  // Subtotal sudah setelah promo; discount_rp hanya catatan berapa yang dihemat.
+  const discountTotal = lines.reduce((s, l) => s + (l.discount?.perUnit ?? 0) * l.quantity, 0);
   const tax = Math.round((subtotal * Number(settings.tax_percentage)) / 100);
   const service = Math.round((subtotal * Number(settings.service_charge_percentage)) / 100);
   const total = subtotal + tax + service;
@@ -227,6 +287,7 @@ async function handle(req: Request) {
         tax_rp: tax,
         service_charge_rp: service,
         total_rp: total,
+        discount_rp: discountTotal,
       })
       .select("id")
       .single();
@@ -257,6 +318,8 @@ async function handle(req: Request) {
         quantity: l.quantity,
         note: l.note,
         line_total_rp: l.unitPrice * l.quantity,
+        // Kolom ini dibuat promo.sql; hanya dikirim kalau ada promo supaya fungsi tetap jalan sebelum SQL dijalankan.
+        ...(l.discount ? { discount_rp: l.discount.perUnit, promo_id: l.discount.promoId } : {}),
       })),
     );
     if (itemsIns.error) throw itemsIns.error;
@@ -274,6 +337,18 @@ async function handle(req: Request) {
       const optIns = await admin.from("order_item_option").insert(optionRows);
       if (optIns.error) throw optIns.error;
     }
+
+    // Data pribadi pemesan, terpisah dari customer_order supaya tidak ikut terbaca staf/antrean.
+    const custIns = await admin.from("private_customer").insert({
+      order_id: orderId,
+      name: customer.name,
+      phone_e164: customer.phoneE164,
+      consented_at: new Date().toISOString(),
+      consent_version: CONSENT_VERSION,
+      // Kolom dari private_customer.sql; hanya dikirim kalau dicentang supaya tetap jalan sebelum SQL dijalankan.
+      ...(body.consent_promo ? { promo_consent: true } : {}),
+    });
+    if (custIns.error) throw custIns.error;
 
     // Riwayat status bersifat pelengkap: kegagalannya tidak boleh menggagalkan pembayaran.
     const hist = await admin.from("order_status_history").insert({

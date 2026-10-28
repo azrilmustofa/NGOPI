@@ -46,7 +46,15 @@ data class DataBarang(
     // Total porsi yang pernah dipesan, diisi dari view menu_terlaris (bukan kolom menu_item).
     @Transient
     val terjual: Int = 0,
+    // Diisi denganPromo(): harga di atas sudah harga promo, hargaNormal = harga sebelum diskon.
+    @Transient
+    val hargaNormal: Int = 0,
+    @Transient
+    val promo: Promo? = null,
 ) {
+    val sedangPromo: Boolean
+        get() = hargaNormal > harga
+
     val kategori: KategoriBarang
         get() = KategoriBarang.fromCategoryId(categoryId)
 }

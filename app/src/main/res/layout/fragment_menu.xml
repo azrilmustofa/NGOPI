@@ -69,7 +69,6 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
                 android:letterSpacing="-0.025"
                 android:text="@string/menu_title"
                 android:textColor="@color/ngopi_ink"
@@ -85,59 +84,23 @@
                 android:textColor="@color/ngopi_muted"
                 android:textSize="13sp" />
 
-            <LinearLayout
+            <!-- Promo hari ini (diatur admin di tabel promo) / menu terlaris; bisa digeser kalau lebih dari satu -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvPromo"
                 android:layout_width="match_parent"
                 android:layout_height="154dp"
                 android:layout_marginTop="24dp"
-                android:background="@drawable/bg_card_green"
-                android:gravity="center_vertical"
+                android:overScrollMode="never"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/llPromoDots"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:gravity="center"
                 android:orientation="horizontal"
-                android:padding="18dp">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:letterSpacing="0.09"
-                        android:text="@string/menu_featured_label"
-                        android:textColor="@color/ngopi_border"
-                        android:textSize="10sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="9dp"
-                        android:text="@string/menu_featured_title"
-                        android:textColor="@color/ngopi_surface"
-                        android:textSize="20sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="9dp"
-                        android:text="@string/menu_featured_price"
-                        android:textColor="@color/ngopi_surface"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <ImageView
-                    android:layout_width="116dp"
-                    android:layout_height="match_parent"
-                    android:layout_marginStart="12dp"
-                    android:background="@drawable/bg_photo_placeholder"
-                    android:importantForAccessibility="no"
-                    android:padding="38dp"
-                    android:src="@drawable/ic_coffee"
-                    app:tint="@color/ngopi_primary" />
-            </LinearLayout>
+                android:visibility="gone" />
 
             <LinearLayout
                 android:layout_width="match_parent"

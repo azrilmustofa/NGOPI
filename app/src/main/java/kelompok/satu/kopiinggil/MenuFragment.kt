@@ -12,15 +12,21 @@ import androidx.core.content.ContextCompat
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.PagerSnapHelper
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.launch
 
-// Tab Lihat menu: header, pencarian, kategori, dan daftar barang (ListView).
+// Tab Lihat menu: header, carousel promo, pencarian, kategori, dan daftar barang (ListView).
 class MenuFragment : Fragment(R.layout.fragment_menu) {
     private lateinit var adapter: BarangAdapter
     private lateinit var tvEmpty: TextView
     private lateinit var lvBarang: ListView
+    private lateinit var rvPromo: RecyclerView
+    private lateinit var llPromoDots: LinearLayout
+    private val promoAdapter = PromoBannerAdapter { barang -> DetailMenuSheet(this, barang).show() }
     private val chips = mutableMapOf<KategoriBarang, TextView>()
     private var kategori = KategoriBarang.SEMUA
     private var query = ""
@@ -40,7 +46,15 @@ class MenuFragment : Fragment(R.layout.fragment_menu) {
         tvEmpty = view.findViewById(R.id.tvEmpty)
         lvBarang = view.findViewById(R.id.lvBarang)
         lvBarang.adapter = adapter
-        lvBarang.setOnItemClickListener { _, _, position, _ -> DetailMenuSheet(this, adapter.getItem(position)).show() }
+        lvBarang.setOnItemClickListener { _, _, position, _ ->
+            val barang = adapter.getItem(position)
+            if (barang.isAvailable) DetailMenuSheet(this, barang).show()
+            else Toast.makeText(requireContext(), getString(R.string.menu_sold_out_toast, barang.nama), Toast.LENGTH_SHORT).show()
+        }
+
+        rvPromo = view.findViewById(R.id.rvPromo)
+        llPromoDots = view.findViewById(R.id.llPromoDots)
+        setupPromoCarousel()
 
         chips.clear()
         buildChips(view.findViewById(R.id.categoryContainer))
@@ -62,12 +76,65 @@ class MenuFragment : Fragment(R.layout.fragment_menu) {
                 val data = supabase.from("menu_item").select().decodeList<DataBarang>()
                 if (data.isNotEmpty()) {
                     val terlaris = loadTerlaris()
-                    semuaBarang = data.filter { it.isActive }.map { it.copy(terjual = terlaris[it.id] ?: 0) }
+                    semuaBarang = data.filter { it.isActive }
+                        .map { it.copy(terjual = terlaris[it.id] ?: 0) }
+                        .denganPromo(loadPromos())
                     render()
+                    renderPromo()
                 }
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), e.toUserMessage(requireContext(), R.string.err_menu_load_failed), Toast.LENGTH_LONG).show()
             }
+        }
+    }
+
+    // Promo yang sedang berlaku (RLS hanya mengembalikan yang aktif). Gagal / tabel belum ada = tanpa promo.
+    private suspend fun loadPromos(): List<Promo> = try {
+        supabase.from("promo").select().decodeList<Promo>()
+    } catch (e: Exception) {
+        android.util.Log.w("MenuFragment", "Promo tidak bisa dibaca", e)
+        emptyList()
+    }
+
+    private fun setupPromoCarousel() {
+        rvPromo.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+        rvPromo.adapter = promoAdapter
+        if (rvPromo.onFlingListener == null) PagerSnapHelper().attachToRecyclerView(rvPromo)
+        rvPromo.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                if (newState == RecyclerView.SCROLL_STATE_IDLE) renderPromoDots()
+            }
+        })
+    }
+
+    // Semua menu yang sedang promo (prioritas tertinggi dulu); kalau tidak ada, satu menu terlaris.
+    private fun renderPromo() {
+        val tersedia = semuaBarang.filter { it.isAvailable }
+        val banner = tersedia.filter { it.sedangPromo }
+            .sortedWith(compareByDescending<DataBarang> { it.promo?.priority ?: 0 }.thenByDescending { it.hargaNormal - it.harga })
+            .ifEmpty { listOfNotNull(tersedia.maxByOrNull { it.terjual }) }
+        promoAdapter.submit(banner)
+        rvPromo.visibility = if (banner.isEmpty()) View.GONE else View.VISIBLE
+        renderPromoDots()
+    }
+
+    private fun renderPromoDots() {
+        val count = promoAdapter.itemCount
+        llPromoDots.visibility = if (count > 1) View.VISIBLE else View.GONE
+        if (count <= 1) return
+        val current = (rvPromo.layoutManager as LinearLayoutManager).findFirstCompletelyVisibleItemPosition().coerceAtLeast(0)
+        val density = resources.displayMetrics.density
+        llPromoDots.removeAllViews()
+        repeat(count) { i ->
+            val active = i == current
+            llPromoDots.addView(View(requireContext()).apply {
+                setBackgroundResource(R.drawable.bg_badge)
+                backgroundTintList = ContextCompat.getColorStateList(requireContext(), if (active) R.color.ngopi_primary else R.color.ngopi_border)
+                layoutParams = LinearLayout.LayoutParams(((if (active) 18 else 6) * density).toInt(), (6 * density).toInt()).apply {
+                    marginStart = (3 * density).toInt()
+                    marginEnd = (3 * density).toInt()
+                }
+            })
         }
     }
 
@@ -147,7 +214,7 @@ class MenuFragment : Fragment(R.layout.fragment_menu) {
                 UrutBarang.TERMURAH -> list.sortedBy { it.harga }
                 UrutBarang.TERMAHAL -> list.sortedByDescending { it.harga }
             }
-        }
+        }.sortedBy { !it.isAvailable } // menu habis selalu di bawah
         adapter.submit(hasil)
         lvBarang.fitHeightToContent()
         tvEmpty.visibility = if (hasil.isEmpty()) View.VISIBLE else View.GONE

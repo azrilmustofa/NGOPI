@@ -1,9 +1,9 @@
 // Edge Function: quote-cart  (Verify JWT: OFF, login diperiksa di kode lewat auth.getUser)
 //
 // Dipanggil app saat membuka Checkout, SEBELUM pesanan dibuat. Menghitung ulang keranjang dari database
-// dengan aturan yang sama seperti create-payment, tapi tidak menyimpan apa pun. Untuk tiap baris dikembalikan:
+// dengan aturan yang sama seperti create-payment (termasuk promo), tapi tidak menyimpan apa pun. Untuk tiap baris dikembalikan:
 //   OK            harga sama dengan yang tampil di app
-//   PRICE_CHANGED harga menu/opsi berubah (base_price_rp + options berisi harga terbaru)
+//   PRICE_CHANGED harga menu/opsi/promo berubah (base_price_rp + options berisi harga terbaru)
 //   UNAVAILABLE   menu/opsi habis atau nonaktif (reason berisi penjelasan)
 // Total (subtotal, pajak, service charge) hanya dari baris yang masih tersedia.
 //
@@ -56,6 +56,35 @@ function parseBody(raw: any): Body {
   return raw as Body;
 }
 
+// Promo yang sedang berlaku per menu (tabel promo). Potongan dihitung dari harga dasar menu, tidak termasuk opsi;
+// kalau ada beberapa promo untuk satu menu, diambil potongan terbesar. Gagal dibaca = harga normal.
+// Aturan ini harus sama di quote-cart/index.ts dan create-payment/index.ts.
+type Discount = { promoId: string; perUnit: number };
+async function loadDiscounts(basePrices: Map<string, number>): Promise<Map<string, Discount>> {
+  const result = new Map<string, Discount>();
+  if (!basePrices.size) return result;
+  const now = new Date().toISOString();
+  const { data, error } = await admin
+    .from("promo")
+    .select("id, menu_item_id, discount_type, discount_value")
+    .in("menu_item_id", [...basePrices.keys()])
+    .eq("is_active", true)
+    .lte("starts_at", now)
+    .gt("ends_at", now);
+  if (error) {
+    console.error("promo", error);
+    return result;
+  }
+  for (const p of data ?? []) {
+    const base = basePrices.get(p.menu_item_id as string) ?? 0;
+    const value = p.discount_value as number;
+    const perUnit = Math.min(base, p.discount_type === "PERCENT" ? Math.round((base * value) / 100) : value);
+    const best = result.get(p.menu_item_id as string);
+    if (perUnit > 0 && (!best || perUnit > best.perUnit)) result.set(p.menu_item_id as string, { promoId: p.id as string, perUnit });
+  }
+  return result;
+}
+
 async function handle(req: Request) {
   await authUser(req);
   const body = parseBody(await req.json().catch(() => null));
@@ -67,6 +96,7 @@ async function handle(req: Request) {
     "Gagal membaca menu",
   );
   const menuById = new Map(menuRows.map((m) => [m.id as string, m]));
+  const discounts = await loadDiscounts(new Map(menuRows.map((m) => [m.id as string, m.base_price_rp as number])));
 
   // --- opsi: grup yang menempel ke tiap menu, aturan min/max, dan harga tambahan ---
   const optionIds = [...new Set(body.items.flatMap((i) => i.option_ids ?? []))];
@@ -123,13 +153,18 @@ async function handle(req: Request) {
       }
     }
 
-    const basePrice = menu.base_price_rp as number;
+    // base_price_rp = harga menu setelah promo (yang dipakai app sebagai harga dasar di keranjang).
+    const normalPrice = menu.base_price_rp as number;
+    const discount = discounts.get(it.menu_item_id)?.perUnit ?? 0;
+    const basePrice = normalPrice - discount;
     const unitPrice = basePrice + chosen.reduce((s, c) => s + c.price_delta_rp, 0);
     return {
       index,
       status: unitPrice === it.unit_price_rp ? "OK" : "PRICE_CHANGED",
       name,
       base_price_rp: basePrice,
+      normal_price_rp: normalPrice,
+      discount_rp: discount,
       options: chosen,
       unit_price_rp: unitPrice,
       quantity: it.quantity,

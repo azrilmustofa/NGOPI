@@ -32,7 +32,11 @@ class BarangAdapter(
         val barang = items[position]
         holder.nama.text = barang.nama
         holder.deskripsi.text = barang.deskripsi
-        holder.harga.text = barang.harga.toRupiah()
+        // Stok habis: tetap tampil (pelanggan tahu menunya ada), tapi pudar dan tidak bisa ditambah.
+        view.alpha = if (barang.isAvailable) 1f else 0.5f
+        holder.harga.text = if (barang.isAvailable) barang.hargaTampil(holder.harga.context)
+        else holder.harga.context.getString(R.string.menu_sold_out)
+        holder.tambah.visibility = if (barang.isAvailable) View.VISIBLE else View.INVISIBLE
         holder.tambah.setOnClickListener { onTambah(barang) }
         holder.foto.loadFoto(barang.photoUrl)
         return view

@@ -40,7 +40,7 @@ class DetailMenuSheet(private val fragment: Fragment, private val barang: DataBa
     fun show() {
         sheet.findViewById<ImageView>(R.id.ivFoto).loadFoto(barang.photoUrl, isDetail = true)
         sheet.findViewById<TextView>(R.id.tvNama).text = barang.nama
-        sheet.findViewById<TextView>(R.id.tvHarga).text = barang.harga.toRupiah()
+        sheet.findViewById<TextView>(R.id.tvHarga).text = barang.hargaTampil(context)
         sheet.findViewById<TextView>(R.id.tvDeskripsi).apply {
             text = barang.deskripsi
             visibility = if (barang.deskripsi.isBlank()) View.GONE else View.VISIBLE

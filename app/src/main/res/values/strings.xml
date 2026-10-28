@@ -99,8 +99,12 @@
     <string name="menu_title">Mau ngopi apa?</string>
     <string name="menu_description">Pesan dari meja, bayar tanpa antre. Kami siapkan setelah pembayaran terverifikasi.</string>
     <string name="menu_featured_label">PILIHAN HARI INI</string>
-    <string name="menu_featured_title">Kopi Susu Gula Aren</string>
-    <string name="menu_featured_price">Mulai Rp24.000</string>
+    <string name="menu_promo_label">PROMO HARI INI</string>
+    <string name="menu_featured_best_seller">Menu paling laris di NGOPI</string>
+    <string name="menu_featured_price">Mulai %1$s</string>
+    <string name="menu_promo_save">Hemat %1$s</string>
+    <string name="menu_sold_out">Stok habis</string>
+    <string name="menu_sold_out_toast">%1$s sedang habis</string>
     <string name="menu_search_hint">Cari kopi atau makanan</string>
     <string name="menu_sort_cd">Urutkan menu</string>
     <string name="menu_sort_eyebrow">URUTKAN</string>
@@ -336,6 +340,7 @@
     <string name="cart_changes_will_remove">%1$s · akan dihapus dari keranjang</string>
     <string name="cart_changes_all_gone">Semua menu di keranjang sedang habis. Pilih menu lain dulu.</string>
     <string name="cart_changes_updated">Keranjang diperbarui ke harga terbaru</string>
+    <string name="checkout_phone_invalid">Nomor WhatsApp di akunmu tidak valid. Perbaiki dulu di tab Profil.</string>
     <string name="checkout_consent_required">Centang persetujuan pesan WhatsApp untuk melanjutkan</string>
     <string name="profile_help_info">Butuh bantuan? Panggil Kasir atau barista terdekat dari mejamu.</string>
     <string name="profile_terms_info">Syarat &amp; Kebijakan Privasi akan segera tersedia.</string>

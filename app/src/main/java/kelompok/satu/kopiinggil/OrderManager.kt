@@ -87,6 +87,9 @@ private data class CreatePaymentParams(
     @SerialName("table_id") val tableId: String,
     @SerialName("checkout_key") val checkoutKey: String,
     val items: List<ItemParam>,
+    // Nama & WA tidak dikirim: server mengambilnya dari akun yang login dan menyimpannya di private_customer.
+    @SerialName("consent_wa") val consentWa: Boolean,
+    @SerialName("consent_promo") val consentPromo: Boolean,
 )
 
 @Serializable
@@ -238,7 +241,7 @@ object OrderManager {
     // Membuat pesanan + transaksi Midtrans Snap (Edge Function create-payment). Pembayaran BELUM lunas di sini:
     // status lunas hanya ditentukan webhook di server. checkoutKey menjaga agar coba ulang tidak membuat pesanan ganda
     // (kunci yang sama mengembalikan transaksi dan redirect_url yang sama).
-    suspend fun createPayment(checkoutKey: String): PendingPayment {
+    suspend fun createPayment(checkoutKey: String, consentPromo: Boolean): PendingPayment {
         val items = CartManager.items.map { it.copy() }
         val body = json.encodeToString(
             CreatePaymentParams(
@@ -247,6 +250,8 @@ object OrderManager {
                 items = items.map { item ->
                     ItemParam(item.barang.id, item.quantity, item.catatan, item.pilihan.map { it.id })
                 },
+                consentWa = true,
+                consentPromo = consentPromo,
             )
         )
         val raw = callFunction("create-payment", body)

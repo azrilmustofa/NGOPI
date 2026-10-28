@@ -57,6 +57,7 @@ class CheckoutActivity : AppCompatActivity() {
         btnPay = findViewById(R.id.btnProceedPayment)
         bannerPending = findViewById(R.id.bannerPending)
         val cbConsentWa = findViewById<MaterialCheckBox>(R.id.cbConsentWa)
+        val cbConsentPromo = findViewById<MaterialCheckBox>(R.id.cbConsentPromo)
 
         // 1. Tampil langsung dari sesi login, 2. lalu segarkan dari server supaya data profil terbaru.
         bindAccount(supabase.auth.currentUserOrNull())
@@ -78,7 +79,12 @@ class CheckoutActivity : AppCompatActivity() {
                 Toast.makeText(this, R.string.checkout_consent_required, Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            startPayment()
+            // Nomor dari akun yang terlalu pendek/panjang akan ditolak server; beri tahu lebih awal.
+            if (customerPhone.length !in 8..13) {
+                Toast.makeText(this, R.string.checkout_phone_invalid, Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+            startPayment(consentPromo = cbConsentPromo.isChecked)
         }
 
         renderPending()
@@ -186,7 +192,7 @@ class CheckoutActivity : AppCompatActivity() {
     }
 
     // Membuat transaksi (atau memakai yang masih berjalan) lalu membuka pop-up Midtrans.
-    private fun startPayment() {
+    private fun startPayment(consentPromo: Boolean) {
         val existing = OrderManager.pendingPayment
         if (existing != null) {
             openSheet(existing.redirectUrl)
@@ -195,7 +201,7 @@ class CheckoutActivity : AppCompatActivity() {
         btnPay.isEnabled = false
         lifecycleScope.launch {
             try {
-                openSheet(OrderManager.createPayment(checkoutKey).redirectUrl)
+                openSheet(OrderManager.createPayment(checkoutKey, consentPromo).redirectUrl)
             } catch (e: Exception) {
                 android.util.Log.e("Checkout", "Gagal membuat pembayaran", e)
                 Toast.makeText(this@CheckoutActivity, e.toUserMessage(this@CheckoutActivity, R.string.err_payment_create_failed), Toast.LENGTH_LONG).show()
