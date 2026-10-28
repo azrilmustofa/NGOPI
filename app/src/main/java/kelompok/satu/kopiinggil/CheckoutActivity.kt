@@ -112,7 +112,10 @@ class CheckoutActivity : AppCompatActivity() {
             btnPay.isEnabled = true
             when (state) {
                 PaymentState.PAID -> {
-                    startActivity(Intent(this, StatusPesananActivity::class.java))
+                    startActivity(Intent(this, StatusPesananActivity::class.java).apply {
+                        putExtra("EXTRA_CUSTOMER_PHONE", customerPhone)
+                        putExtra("EXTRA_CUSTOMER_NAME", customerName)
+                    })
                     finish()
                 }
                 PaymentState.FAILED -> {

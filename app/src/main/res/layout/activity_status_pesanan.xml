@@ -339,15 +339,19 @@
 
             <!-- Receipt Info Card -->
             <LinearLayout
+                android:id="@+id/cardReceipt"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:background="@drawable/bg_card_outline"
+                android:clickable="true"
+                android:focusable="true"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:padding="14dp">
 
                 <ImageView
+                    android:id="@+id/ivReceiptIcon"
                     android:layout_width="20dp"
                     android:layout_height="20dp"
                     android:contentDescription="@null"
@@ -355,6 +359,7 @@
                     app:tint="@color/ngopi_muted" />
 
                 <TextView
+                    android:id="@+id/tvReceiptNote"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"

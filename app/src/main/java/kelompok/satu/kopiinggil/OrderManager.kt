@@ -50,10 +50,11 @@ data class PlacedOrder(
 ) {
     // Teks status untuk pelanggan; status server: PAID -> ACCEPTED -> PREPARING -> READY -> COMPLETED.
     val statusLabel: String
-        get() = when (status) {
-            "PREPARING" -> "Sedang diracik"
-            "READY" -> "Siap diantar"
+        get() = when (status.uppercase()) {
+            "PREPARING", "BREWING", "DIBUAT" -> "Sedang diracik"
+            "READY", "SIAP" -> "Siap diantar"
             "COMPLETED" -> "Selesai"
+            "CANCELLED" -> "Dibatalkan"
             else -> "Diproses"
         }
 }
@@ -125,6 +126,7 @@ private data class OrderItemDto(
 
 @Serializable
 private data class PaymentAttemptDto(
+    @SerialName("order_id") val orderId: String = "",
     val status: String = "",
     @SerialName("payment_method") val paymentMethod: String? = null,
     @SerialName("paid_at") val paidAt: String? = null,
@@ -136,6 +138,11 @@ object OrderManager {
     var lastOrder: PlacedOrder? = null
         private set
 
+    var orderHistory: List<PlacedOrder> = emptyList()
+        private set
+
+    var selectedOrder: PlacedOrder? = null
+
     var pendingPayment: PendingPayment? = null
         private set
 
@@ -145,7 +152,7 @@ object OrderManager {
     private const val PAYMENT_WINDOW_MS = 30 * 60_000L
 
     // Pesanan AWAITING_PAYMENT / CANCELLED belum jadi pesanan: tidak ditampilkan sebagai "diproses".
-    private val PAID_STATUSES = listOf("PAID", "ACCEPTED", "PREPARING", "READY", "COMPLETED")
+    private val PAID_STATUSES = listOf("PAID", "ACCEPTED", "PREPARING", "BREWING", "DIBUAT", "READY", "SIAP", "COMPLETED", "BARU")
 
     // Transaksi gagal/kedaluwarsa tidak bisa dilanjutkan; pembayaran berikutnya membuat transaksi baru.
     fun discardPending() {
@@ -154,6 +161,8 @@ object OrderManager {
 
     fun clear() {
         lastOrder = null
+        orderHistory = emptyList()
+        selectedOrder = null
         pendingPayment = null
     }
 
@@ -209,7 +218,7 @@ object OrderManager {
         android.util.Log.d("OrderManager", "cek bayar ${pending.publicId} attempt=${attempt.status}")
         return when (attempt.status) {
             "PAID" -> {
-                lastOrder = PlacedOrder(
+                val order = PlacedOrder(
                     number = "#${pending.publicId}",
                     table = pending.table,
                     items = pending.items,
@@ -219,6 +228,8 @@ object OrderManager {
                     method = MetodeBayar.fromProvider(attempt.paymentMethod),
                     paidAt = formatTime(attempt.paidAt),
                 )
+                lastOrder = order
+                orderHistory = listOf(order) + orderHistory.filterNot { it.number == order.number }
                 pendingPayment = null
                 CartManager.clear()
                 PaymentState.PAID
@@ -258,11 +269,12 @@ object OrderManager {
         }
     }
 
-    suspend fun fetchLatestOrder(): PlacedOrder? {
+    suspend fun fetchOrders(): List<PlacedOrder> {
         val currentUser = supabase.auth.currentUserOrNull()
         if (currentUser == null) {
             lastOrder = null
-            return null
+            orderHistory = emptyList()
+            return emptyList()
         }
 
         return try {
@@ -272,71 +284,90 @@ object OrderManager {
                     isIn("status", PAID_STATUSES)
                 }
                 order("created_at", Order.DESCENDING)
-                limit(1)
             }.decodeList<OrderDto>()
 
             if (orders.isEmpty()) {
                 lastOrder = null
-                return null
+                orderHistory = emptyList()
+                return emptyList()
             }
 
-            val latest = orders.first()
-            android.util.Log.d("OrderManager", "pesanan terakhir ${latest.publicId} status=${latest.status} id=${latest.id}")
-            val items = supabase.from("order_item").select {
-                filter { eq("order_id", latest.id) }
-            }.decodeList<OrderItemDto>()
+            val orderIds = orders.map { it.id }
 
-            val cartItems = items.map { itemDto ->
-                CartItem(
-                    barang = DataBarang(
-                        id = itemDto.id,
-                        nama = itemDto.nameSnapshot,
-                        harga = itemDto.unitPrice,
-                    ),
-                    quantity = itemDto.quantity,
-                    catatan = itemDto.note.orEmpty(),
+            val itemsMap: Map<String, List<OrderItemDto>> = try {
+                if (orderIds.isNotEmpty()) {
+                    supabase.from("order_item").select {
+                        filter { isIn("order_id", orderIds) }
+                    }.decodeList<OrderItemDto>().groupBy { it.orderId }
+                } else emptyMap()
+            } catch (e: Exception) {
+                android.util.Log.e("OrderManager", "Gagal memuat item pesanan", e)
+                emptyMap()
+            }
+
+            val tableMap: Map<String, CafeTable> = try {
+                supabase.from("cafe_table").select().decodeList<CafeTable>().associateBy { it.id }
+            } catch (_: Exception) {
+                emptyMap()
+            }
+
+            val attemptsMap: Map<String, List<PaymentAttemptDto>> = try {
+                if (orderIds.isNotEmpty()) {
+                    supabase.from("payment_attempt").select {
+                        filter { isIn("order_id", orderIds) }
+                        order("created_at", Order.DESCENDING)
+                    }.decodeList<PaymentAttemptDto>().groupBy { it.orderId }
+                } else emptyMap()
+            } catch (_: Exception) {
+                emptyMap()
+            }
+
+            val result = orders.map { orderDto ->
+                val items = itemsMap[orderDto.id].orEmpty().map { itemDto ->
+                    CartItem(
+                        barang = DataBarang(
+                            id = itemDto.id,
+                            nama = itemDto.nameSnapshot,
+                            harga = itemDto.unitPrice,
+                        ),
+                        quantity = itemDto.quantity,
+                        catatan = itemDto.note.orEmpty(),
+                    )
+                }
+
+                val tableNum = if (orderDto.tableId.isNotEmpty()) {
+                    tableMap[orderDto.tableId]?.tableNumber ?: CartManager.tableNumber
+                } else {
+                    CartManager.tableNumber
+                }
+
+                val paymentMethod = MetodeBayar.fromProvider(attemptsMap[orderDto.id]?.firstOrNull()?.paymentMethod)
+
+                PlacedOrder(
+                    number = "#${orderDto.publicId}",
+                    table = tableNum,
+                    items = items,
+                    subtotal = orderDto.subtotal,
+                    tax = orderDto.tax,
+                    total = orderDto.total,
+                    method = paymentMethod,
+                    paidAt = formatTime(orderDto.paidAt ?: orderDto.createdAt),
+                    status = orderDto.status,
                 )
             }
 
-            val tableNum = if (latest.tableId.isNotEmpty()) {
-                try {
-                    supabase.from("cafe_table").select {
-                        filter { eq("id", latest.tableId) }
-                    }.decodeSingleOrNull<CafeTable>()?.tableNumber ?: CartManager.tableNumber
-                } catch (_: Exception) {
-                    CartManager.tableNumber
-                }
-            } else {
-                CartManager.tableNumber
-            }
-
-            val paymentMethod = try {
-                val attempts = supabase.from("payment_attempt").select {
-                    filter { eq("order_id", latest.id) }
-                    order("created_at", Order.DESCENDING)
-                    limit(1)
-                }.decodeList<PaymentAttemptDto>()
-                MetodeBayar.fromProvider(attempts.firstOrNull()?.paymentMethod)
-            } catch (_: Exception) {
-                MetodeBayar.QRIS
-            }
-
-            val order = PlacedOrder(
-                number = "#${latest.publicId}",
-                table = tableNum,
-                items = cartItems,
-                subtotal = latest.subtotal,
-                tax = latest.tax,
-                total = latest.total,
-                method = paymentMethod,
-                paidAt = formatTime(latest.paidAt ?: latest.createdAt),
-                status = latest.status,
-            )
-            lastOrder = order
-            order
+            orderHistory = result
+            lastOrder = result.firstOrNull()
+            result
         } catch (e: Exception) {
-            lastOrder
+            android.util.Log.e("OrderManager", "Gagal memuat riwayat pesanan", e)
+            orderHistory
         }
+    }
+
+    suspend fun fetchLatestOrder(): PlacedOrder? {
+        fetchOrders()
+        return lastOrder
     }
 
     private fun formatTime(isoString: String?): String {
@@ -346,11 +377,13 @@ object OrderManager {
                 timeZone = TimeZone.getTimeZone("UTC")
             }
             val clean = isoString.substringBefore(".").substringBefore("+").substringBefore("Z")
-            val date = parser.parse(clean)
-            val formatter = SimpleDateFormat("HH.mm", Locale.forLanguageTag("id-ID")).apply {
+            val date = parser.parse(clean) ?: Date()
+            val isToday = android.text.format.DateUtils.isToday(date.time)
+            val pattern = if (isToday) "HH.mm" else "d MMM, HH.mm"
+            val formatter = SimpleDateFormat(pattern, Locale.forLanguageTag("id-ID")).apply {
                 timeZone = TimeZone.getDefault()
             }
-            formatter.format(date ?: Date())
+            formatter.format(date)
         } catch (_: Exception) {
             SimpleDateFormat("HH.mm", Locale.forLanguageTag("id-ID")).format(Date())
         }
