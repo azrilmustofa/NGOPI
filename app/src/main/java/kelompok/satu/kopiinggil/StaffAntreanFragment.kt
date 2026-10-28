@@ -1,5 +1,6 @@
 package kelompok.satu.kopiinggil
 
+import android.content.Intent
 import android.content.res.ColorStateList
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -75,6 +76,15 @@ class StaffAntreanFragment : Fragment(R.layout.fragment_staff_antrean) {
         chipSiap = view.findViewById(R.id.chipFilterSiap)
 
         setupFilterChips()
+        tvSyncText.setOnClickListener {
+            Toast.makeText(requireContext(), "Memperbarui antrean...", Toast.LENGTH_SHORT).show()
+            fetchOrdersFromSupabase()
+        }
+        fetchOrdersFromSupabase()
+    }
+
+    override fun onResume() {
+        super.onResume()
         fetchOrdersFromSupabase()
     }
 
@@ -162,9 +172,15 @@ class StaffAntreanFragment : Fragment(R.layout.fragment_staff_antrean) {
     }
 
     private fun updateMetrics() {
-        val baruCount = allOrders.count { it.dto.status.equals("PAID", true) || it.dto.status.equals("BARU", true) }
-        val dibuatCount = allOrders.count { it.dto.status.equals("BREWING", true) || it.dto.status.equals("DIBUAT", true) }
-        val siapCount = allOrders.count { it.dto.status.equals("READY", true) || it.dto.status.equals("SIAP", true) }
+        val baruCount = allOrders.count {
+            it.dto.status.equals("PAID", true) || it.dto.status.equals("BARU", true) || it.dto.status.equals("ACCEPTED", true)
+        }
+        val dibuatCount = allOrders.count {
+            it.dto.status.equals("PREPARING", true) || it.dto.status.equals("BREWING", true) || it.dto.status.equals("DIBUAT", true)
+        }
+        val siapCount = allOrders.count {
+            it.dto.status.equals("READY", true) || it.dto.status.equals("SIAP", true)
+        }
 
         tvCountBaru.text = String.format(Locale.getDefault(), "%02d", baruCount)
         tvCountDibuat.text = String.format(Locale.getDefault(), "%02d", dibuatCount)
@@ -177,10 +193,10 @@ class StaffAntreanFragment : Fragment(R.layout.fragment_staff_antrean) {
 
         val filtered = allOrders.filter { data ->
             when (selectedFilter) {
-                "BARU" -> data.dto.status.equals("PAID", true) || data.dto.status.equals("BARU", true)
-                "DIBUAT" -> data.dto.status.equals("BREWING", true) || data.dto.status.equals("DIBUAT", true)
+                "BARU" -> data.dto.status.equals("PAID", true) || data.dto.status.equals("BARU", true) || data.dto.status.equals("ACCEPTED", true)
+                "DIBUAT" -> data.dto.status.equals("PREPARING", true) || data.dto.status.equals("BREWING", true) || data.dto.status.equals("DIBUAT", true)
                 "SIAP" -> data.dto.status.equals("READY", true) || data.dto.status.equals("SIAP", true)
-                else -> true
+                else -> !data.dto.status.equals("COMPLETED", true) && !data.dto.status.equals("CANCELLED", true)
             }
         }
 
@@ -208,12 +224,12 @@ class StaffAntreanFragment : Fragment(R.layout.fragment_staff_antrean) {
             tvOrderItemsSummary.text = data.itemsSummary
 
             when {
-                data.dto.status.equals("PAID", true) || data.dto.status.equals("BARU", true) -> {
+                data.dto.status.equals("PAID", true) || data.dto.status.equals("BARU", true) || data.dto.status.equals("ACCEPTED", true) -> {
                     tvOrderStatusBadge.text = "BARU"
                     tvOrderStatusBadge.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.ngopi_primary))
                     tvOrderStatusBadge.setTextColor(ContextCompat.getColor(requireContext(), R.color.white))
                 }
-                data.dto.status.equals("BREWING", true) || data.dto.status.equals("DIBUAT", true) -> {
+                data.dto.status.equals("PREPARING", true) || data.dto.status.equals("BREWING", true) || data.dto.status.equals("DIBUAT", true) -> {
                     tvOrderStatusBadge.text = "DIBUAT"
                     tvOrderStatusBadge.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.ngopi_accent))
                     tvOrderStatusBadge.setTextColor(ContextCompat.getColor(requireContext(), R.color.ngopi_ink))
@@ -231,7 +247,14 @@ class StaffAntreanFragment : Fragment(R.layout.fragment_staff_antrean) {
             }
 
             row.setOnClickListener {
-                Toast.makeText(requireContext(), "Pesanan #${data.dto.publicId} di ${data.tableLabel}", Toast.LENGTH_SHORT).show()
+                val intent = Intent(requireContext(), StaffDetailProduksiActivity::class.java).apply {
+                    putExtra(StaffDetailProduksiActivity.EXTRA_ORDER_ID, data.dto.id)
+                    putExtra(StaffDetailProduksiActivity.EXTRA_PUBLIC_ID, data.dto.publicId)
+                    putExtra(StaffDetailProduksiActivity.EXTRA_TABLE_LABEL, data.tableLabel)
+                    putExtra(StaffDetailProduksiActivity.EXTRA_STATUS, data.dto.status)
+                    putExtra(StaffDetailProduksiActivity.EXTRA_CREATED_AT, data.dto.createdAt)
+                }
+                startActivity(intent)
             }
 
             llQueueContainer.addView(row)
