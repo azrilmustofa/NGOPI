@@ -10,7 +10,16 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
+
+@Serializable
+private data class OrderStatusPollingDto(
+    val status: String = "",
+)
 
 // Pesanan diproses: tampil setelah pembayaran.
 // Mengirim nota ke WhatsApp pelanggan dan menampilkan status pengiriman.
@@ -71,6 +80,34 @@ class StatusPesananActivity : AppCompatActivity() {
             sendWhatsAppReceipt(order, userInitiated = false, targetPhone = extraPhone, targetName = extraName)
         } else {
             showReceiptSuccess()
+        }
+
+        startStatusPolling(order.number)
+    }
+
+    private fun startStatusPolling(orderNumber: String) {
+        val cleanNumber = orderNumber.removePrefix("#").trim()
+        lifecycleScope.launch {
+            while (isActive) {
+                delay(4000)
+                try {
+                    val orderList = supabase.postgrest["customer_order"].select {
+                        filter { eq("public_id", cleanNumber) }
+                    }.decodeList<OrderStatusPollingDto>()
+
+                    val current = orderList.firstOrNull()
+                    if (current != null && current.status.isNotBlank()) {
+                        val titleTv = findViewById<TextView>(R.id.tvStatusTitle)
+                        titleTv?.text = when (current.status.uppercase()) {
+                            "PREPARING", "BREWING", "DIBUAT" -> "Sedang diracik"
+                            "READY", "SIAP" -> "Siap diantar"
+                            "COMPLETED" -> "Pesanan selesai"
+                            "CANCELLED" -> "Pesanan dibatalkan"
+                            else -> "Pesanan diproses"
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
         }
     }
 
