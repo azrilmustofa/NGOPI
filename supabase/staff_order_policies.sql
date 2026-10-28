@@ -30,6 +30,7 @@ create policy "staff_order_update_status" on public.customer_order
   );
 
 -- 3. Izin bagi staf untuk MEMBACA (SELECT) seluruh order_item
+drop policy if exists "staff_order_item_select_all" on public.order_item;
 create policy "staff_order_item_select_all" on public.order_item
   for select to authenticated
   using (
@@ -38,6 +39,15 @@ create policy "staff_order_item_select_all" on public.order_item
       where staff_user.uid = auth.uid() and staff_user.is_active = true
     )
   );
+
+-- Izin umum baca order_item jika public
+drop policy if exists "admin_order_item_all" on public.order_item;
+create policy "admin_order_item_all" on public.order_item
+  for all to public using (true) with check (true);
+
+drop policy if exists "admin_order_item_option_all" on public.order_item_option;
+create policy "admin_order_item_option_all" on public.order_item_option
+  for all to public using (true) with check (true);
 
 -- 4. Izin bagi staf untuk MEMBACA (SELECT) seluruh order_item_option
 create policy "staff_order_item_option_select_all" on public.order_item_option
