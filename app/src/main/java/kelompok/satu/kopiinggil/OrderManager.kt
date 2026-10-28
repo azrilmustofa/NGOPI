@@ -148,9 +148,9 @@ data class CartQuote(
 
 @Serializable
 private data class OrderDto(
-    val id: String,
-    @SerialName("public_id") val publicId: String,
-    @SerialName("table_id") val tableId: String = "",
+    val id: String = "",
+    @SerialName("public_id") val publicId: String = "",
+    @SerialName("table_id") val tableId: String? = null,
     val status: String = "",
     @SerialName("subtotal_rp") val subtotal: Int = 0,
     @SerialName("tax_rp") val tax: Int = 0,
@@ -161,9 +161,9 @@ private data class OrderDto(
 
 @Serializable
 private data class OrderItemDto(
-    val id: String,
-    @SerialName("order_id") val orderId: String,
-    @SerialName("name_snapshot") val nameSnapshot: String,
+    val id: String = "",
+    @SerialName("order_id") val orderId: String = "",
+    @SerialName("name_snapshot") val nameSnapshot: String = "",
     @SerialName("unit_price_rp") val unitPrice: Int = 0,
     val quantity: Int = 1,
     val note: String? = null,
@@ -198,7 +198,8 @@ object OrderManager {
     private const val PAYMENT_WINDOW_MS = 30 * 60_000L
 
     // Pesanan AWAITING_PAYMENT / CANCELLED belum jadi pesanan: tidak ditampilkan sebagai "diproses".
-    private val PAID_STATUSES = listOf("PAID", "ACCEPTED", "PREPARING", "BREWING", "DIBUAT", "READY", "SIAP", "COMPLETED", "BARU")
+    // Nilai harus sesuai enum order_status di PostgreSQL Supabase (PAID, ACCEPTED, PREPARING, READY, COMPLETED).
+    private val PAID_STATUSES = listOf("PAID", "ACCEPTED", "PREPARING", "READY", "COMPLETED")
 
     // Transaksi gagal/kedaluwarsa tidak bisa dilanjutkan; pembayaran berikutnya membuat transaksi baru.
     fun discardPending() {
@@ -400,7 +401,7 @@ object OrderManager {
                     )
                 }
 
-                val tableNum = if (orderDto.tableId.isNotEmpty()) {
+                val tableNum = if (!orderDto.tableId.isNullOrEmpty()) {
                     tableMap[orderDto.tableId]?.tableNumber ?: CartManager.tableNumber
                 } else {
                     CartManager.tableNumber
