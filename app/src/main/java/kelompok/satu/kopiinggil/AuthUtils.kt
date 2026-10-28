@@ -18,7 +18,7 @@ fun AppCompatActivity.applyEdgeToEdge(rootId: Int) {
 }
 
 fun AppCompatActivity.openMainAndClearStack() {
-    CartManager.clear()
+    CartManager.unload()
     OrderManager.clear()
     startActivity(
         Intent(this, MainActivity::class.java)
@@ -27,7 +27,7 @@ fun AppCompatActivity.openMainAndClearStack() {
 }
 
 fun AppCompatActivity.openStaffDashboardAndClearStack() {
-    CartManager.clear()
+    CartManager.unload()
     OrderManager.clear()
     startActivity(
         Intent(this, StaffHomeActivity::class.java)

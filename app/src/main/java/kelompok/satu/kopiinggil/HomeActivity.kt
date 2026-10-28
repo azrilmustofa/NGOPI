@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import io.github.jan.supabase.auth.auth
 
 // Host untuk tab pelanggan: berisi container fragment dan bottom navigation (Menu, Keranjang, Pesanan, Profil).
 class HomeActivity : AppCompatActivity() {
@@ -13,8 +14,12 @@ class HomeActivity : AppCompatActivity() {
         applyEdgeToEdge(R.id.main)
 
         val table = intent.getIntExtra(EXTRA_TABLE, 0)
-        CartManager.tableNumber = table
-        CartManager.tableId = intent.getStringExtra(EXTRA_TABLE_ID).orEmpty()
+        CartManager.restore(
+            this,
+            tableNumber = table,
+            tableId = intent.getStringExtra(EXTRA_TABLE_ID).orEmpty(),
+            ownerUid = supabase.auth.currentUserOrNull()?.id.orEmpty(),
+        )
 
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
