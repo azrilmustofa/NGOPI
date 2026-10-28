@@ -50,6 +50,11 @@ class HomeActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         updateCartBadge()
+        // Diminta layar lain sebelum ditutup (mis. "Pesan lagi" / "Lihat pesanan sebelumnya" di Pesanan selesai).
+        pendingTab?.let {
+            pendingTab = null
+            findViewById<BottomNavigationView>(R.id.bottomNav).selectedItemId = it
+        }
     }
 
     fun selectMenuTab() {
@@ -84,6 +89,9 @@ class HomeActivity : AppCompatActivity() {
     }
 
     companion object {
+        // Id item bottom nav yang dibuka saat HomeActivity tampil lagi.
+        var pendingTab: Int? = null
+
         const val EXTRA_TABLE = "extra_table"
         const val EXTRA_TABLE_ID = "extra_table_id"
         private const val TAG_MENU = "tab_menu"

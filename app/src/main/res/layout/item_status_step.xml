@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Satu tahap di "Perjalanan pesanan": ikon (selesai / sedang berjalan / menunggu), judul, dan keterangan waktu. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingTop="12dp">
+
+    <ImageView
+        android:id="@+id/ivStepIcon"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:contentDescription="@null"
+        tools:src="@drawable/ic_check_circle" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvStepTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="13sp"
+            tools:text="Pembayaran diterima" />
+
+        <TextView
+            android:id="@+id/tvStepTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/ngopi_muted"
+            android:textSize="11sp"
+            tools:text="09.41 · Tervalidasi" />
+    </LinearLayout>
+</LinearLayout>

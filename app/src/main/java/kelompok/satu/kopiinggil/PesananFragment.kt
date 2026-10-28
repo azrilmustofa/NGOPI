@@ -10,7 +10,9 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
 
 class PesananFragment : Fragment(R.layout.fragment_pesanan) {
@@ -18,6 +20,7 @@ class PesananFragment : Fragment(R.layout.fragment_pesanan) {
     private lateinit var tvTableBadge: TextView
     private lateinit var llPesananEmptyState: LinearLayout
     private lateinit var llOrdersList: LinearLayout
+    private lateinit var tvOffline: TextView
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -25,12 +28,27 @@ class PesananFragment : Fragment(R.layout.fragment_pesanan) {
         tvTableBadge = view.findViewById(R.id.tvPesananTableBadge)
         llPesananEmptyState = view.findViewById(R.id.llPesananEmptyState)
         llOrdersList = view.findViewById(R.id.llOrdersList)
+        tvOffline = view.findViewById(R.id.tvPesananOffline)
 
         view.findViewById<View>(R.id.btnPesananGoToMenu).setOnClickListener {
             (activity as? HomeActivity)?.selectMenuTab()
         }
 
         loadPesanan()
+
+        // Status pesanan diperbarui otomatis selama tab ini terlihat (barista bisa mengubahnya kapan saja).
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                // Tiap 10 detik, dan langsung begitu koneksi tersambung lagi.
+                requireContext().pollEvery(REFRESH_INTERVAL_MS) {
+                    if (!isHidden) {
+                        OrderManager.fetchOrders()
+                        renderPesanan()
+                    }
+                    true
+                }
+            }
+        }
     }
 
     override fun onResume() {
@@ -60,6 +78,8 @@ class PesananFragment : Fragment(R.layout.fragment_pesanan) {
         } else {
             getString(R.string.table_placeholder)
         }
+
+        tvOffline.visibility = if (OrderManager.ordersOffline) View.VISIBLE else View.GONE
 
         val orders = OrderManager.orderHistory
         if (orders.isNotEmpty()) {
@@ -105,5 +125,9 @@ class PesananFragment : Fragment(R.layout.fragment_pesanan) {
             llOrdersList.visibility = View.GONE
             llOrdersList.removeAllViews()
         }
+    }
+
+    private companion object {
+        const val REFRESH_INTERVAL_MS = 10_000L
     }
 }

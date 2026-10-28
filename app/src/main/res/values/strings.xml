@@ -211,6 +211,37 @@
     <string name="status_receipt_note">Struk WhatsApp dikirim terpisah. Status pesanan tetap dapat dipantau di sini.</string>
     <string name="status_btn_order_again">Pesan lagi</string>
     <string name="status_btn_call_cashier">Panggil Kasir</string>
+    <string name="status_order_detail">Rincian pesanan</string>
+    <string name="status_total_paid">Total pembayaran</string>
+    <string name="status_title_paid">Menunggu barista</string>
+    <string name="status_title_accepted">Pesanan diterima</string>
+    <string name="status_title_preparing">Sedang diracik</string>
+    <string name="status_title_ready">Siap diantar</string>
+    <string name="status_title_cancelled">Pesanan dibatalkan</string>
+    <string name="status_paid_via">Dibayar via %1$s</string>
+    <string name="status_dine_in">Dine-in</string>
+    <string name="order_number_label">ORDER %1$s</string>
+    <string name="status_table">Meja %1$02d</string>
+    <string name="status_step_paid_time">%1$s · Tervalidasi</string>
+    <string name="status_step_accepted_time">%1$s · Barista menerima pesanan</string>
+    <string name="status_step_preparing_time">Sedang dibuat sejak %1$s</string>
+    <string name="status_step_prepared_time">%1$s · Mulai dibuat</string>
+    <string name="status_step_ready_time">%1$s · Diantar ke meja</string>
+    <string name="status_step_done_time">%1$s · Selesai</string>
+    <string name="status_step_waiting_barista">Menunggu barista</string>
+    <string name="status_step_next">Segera</string>
+    <string name="status_step_waiting">Menunggu</string>
+    <string name="status_offline">Koneksi terputus. Status terakhir diperbarui %1$s, akan diperbarui otomatis saat online.</string>
+    <string name="done_title">Selamat menikmati!</string>
+    <string name="done_subtitle">Pesanan selesai · %1$s</string>
+    <string name="status_done_title">Pesanan selesai</string>
+    <string name="done_time">Diselesaikan pukul %1$s</string>
+    <string name="done_summary_title">Ringkasan pembayaran</string>
+    <string name="done_tax">Pajak &amp; layanan</string>
+    <string name="done_total">Total dibayar</string>
+    <string name="done_receipt_note">Struk dikirim ke WhatsApp. Jika belum sampai, hubungi Kasir.</string>
+    <string name="done_btn_orders">Lihat pesanan sebelumnya</string>
+    <string name="orders_offline">Koneksi terputus. Menampilkan data terakhir.</string>
 
     <!-- Menunggu Verifikasi (05) -->
     <string name="verif_eyebrow">PEMBAYARAN</string>
@@ -248,12 +279,6 @@
     <string name="review_btn_back">Kembali ke keranjang</string>
 
     <!-- Pesanan Selesai (10) -->
-    <string name="done_title">Selamat menikmati!</string>
-    <string name="done_subtitle">Pesanan selesai · Meja %1$02d</string>
-    <string name="done_card_title">Pesanan selesai</string>
-    <string name="done_card_detail">Diselesaikan pukul %1$s</string>
-    <string name="done_wa_note">Struk dikirim ke WhatsApp. Jika belum sampai, hubungi Kasir.</string>
-    <string name="done_btn_previous_orders">Lihat pesanan sebelumnya</string>
 
 
     <!-- Profil: edit & ubah kata sandi -->
@@ -290,8 +315,11 @@
     <string name="checkout_btn_continue">Lanjutkan pembayaran</string>
     <string name="checkout_pending_note">Pembayaran belum selesai. Lanjutkan untuk membayar, atau tunggu konfirmasi jika kamu sudah membayar.</string>
     <string name="pay_failed_title">Pembayaran belum berhasil</string>
-    <string name="pay_failed_message">Transaksi belum tercatat lunas atau sudah kedaluwarsa, jadi pesanan tidak masuk ke dapur. Coba bayar lagi untuk membuat transaksi baru.</string>
+    <string name="pay_failed_message">Pesananmu masih tersimpan, tapi pembayarannya belum tercatat lunas jadi belum masuk ke dapur. Coba bayar lagi, boleh dengan metode lain.</string>
     <string name="pay_failed_retry">Coba bayar lagi</string>
+    <string name="pay_failed_later">Nanti</string>
+    <string name="pay_closed_title">Waktu pembayaran habis</string>
+    <string name="pay_closed_message">Pesanan ini sudah tidak bisa dibayar. Tekan bayar lagi untuk membuat pesanan baru dari keranjangmu.</string>
     <string name="download_saved_image">QR disimpan di Galeri (Pictures/NGOPI). Buka dari aplikasi e-wallet untuk membayar.</string>
     <string name="download_saved_file">File disimpan di folder Download/NGOPI</string>
     <string name="download_started">Mengunduh… cek notifikasi</string>

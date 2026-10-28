@@ -154,6 +154,20 @@ Deno.serve(async (req) => {
     if (ord.data?.length) await addHistory(attempt.order_id, "AWAITING_PAYMENT", "PAID", "Pembayaran Midtrans berhasil");
     else console.error("Order tidak lagi AWAITING_PAYMENT saat pembayaran masuk", attempt.order_id);
   } else if (next === "EXPIRED" || next === "CANCELLED") {
+    // Transaksi lama yang kedaluwarsa/dibatalkan (mis. setelah "Coba bayar lagi") tidak boleh membatalkan
+    // pesanan yang masih punya transaksi lain yang aktif atau sudah lunas.
+    const others = await admin
+      .from("payment_attempt")
+      .select("id")
+      .eq("order_id", attempt.order_id)
+      .neq("id", attempt.id)
+      .in("status", ["PENDING", "PAID"]);
+    if (others.error) {
+      console.error("baca payment_attempt lain", others.error);
+      return json(500, { error: "Gagal membaca pembayaran" });
+    }
+    if (others.data?.length) return json(200, { ok: true, note: "pesanan masih punya transaksi lain" });
+
     const reason = next === "EXPIRED" ? "Pembayaran kedaluwarsa" : "Pembayaran dibatalkan";
     const ord = await admin
       .from("customer_order")

@@ -318,8 +318,10 @@ async function handle(req: Request) {
         quantity: l.quantity,
         note: l.note,
         line_total_rp: l.unitPrice * l.quantity,
-        // Kolom ini dibuat promo.sql; hanya dikirim kalau ada promo supaya fungsi tetap jalan sebelum SQL dijalankan.
-        ...(l.discount ? { discount_rp: l.discount.perUnit, promo_id: l.discount.promoId } : {}),
+        // Selalu dikirim di setiap baris: insert banyak baris sekaligus memakai kolom yang sama untuk semua baris,
+        // jadi kolom yang hilang di satu baris terkirim sebagai null (bukan default 0).
+        discount_rp: l.discount?.perUnit ?? 0,
+        promo_id: l.discount?.promoId ?? null,
       })),
     );
     if (itemsIns.error) throw itemsIns.error;
@@ -343,10 +345,11 @@ async function handle(req: Request) {
       order_id: orderId,
       name: customer.name,
       phone_e164: customer.phoneE164,
+      // Wajib true (CHECK private_customer_transaction_consent_check); sudah divalidasi lewat consent_wa.
+      transaction_consent: true,
       consented_at: new Date().toISOString(),
       consent_version: CONSENT_VERSION,
-      // Kolom dari private_customer.sql; hanya dikirim kalau dicentang supaya tetap jalan sebelum SQL dijalankan.
-      ...(body.consent_promo ? { promo_consent: true } : {}),
+      promotion_consent: body.consent_promo === true,
     });
     if (custIns.error) throw custIns.error;
 
@@ -419,8 +422,13 @@ async function handle(req: Request) {
       total_rp: total,
     };
   } catch (e) {
+    // Catat error aslinya (lihat Edge Functions -> create-payment -> Logs); pelanggan hanya melihat pesan umum.
+    console.error("create-payment gagal setelah pesanan dibuat", orderId, e);
     await cancelOrder("Gagal menyiapkan pembayaran");
-    throw e instanceof HttpError ? e : new HttpError(500, "Gagal menyimpan pesanan");
+    if (e instanceof HttpError) throw e;
+    // Sandbox saja: sertakan pesan error database supaya mudah dicari penyebabnya dari toast di app.
+    const detail = MIDTRANS_SERVER_KEY.startsWith("SB-") ? ` (${(e as { message?: string })?.message ?? e})` : "";
+    throw new HttpError(500, "Gagal menyimpan pesanan" + detail);
   }
 }
 

@@ -73,6 +73,36 @@
             android:paddingEnd="20dp"
             android:paddingBottom="20dp">
 
+            <!-- Koneksi terputus: status terakhir yang diketahui tetap tampil -->
+            <LinearLayout
+                android:id="@+id/bannerOffline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_note"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="12dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_sync"
+                    app:tint="@color/ngopi_error" />
+
+                <TextView
+                    android:id="@+id/tvOfflineNote"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:lineSpacingMultiplier="1.1"
+                    android:textColor="@color/ngopi_ink"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
             <!-- Paid confirmation banner -->
             <LinearLayout
                 android:layout_width="match_parent"
@@ -126,159 +156,13 @@
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
-                <!-- Step 1 -->
+                <!-- Diisi StatusPesananActivity dari status asli (item_status_step) -->
                 <LinearLayout
+                    android:id="@+id/llTimeline"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_verified"
-                        app:tint="@color/ngopi_primary" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/status_step_payment"
-                            android:textColor="@color/ngopi_ink"
-                            android:textSize="13sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:id="@+id/tvStepPaymentTime"
-                            android:text="09.41 · Tervalidasi"
-                            android:textColor="@color/ngopi_muted"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <!-- Step 2 -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_verified"
-                        app:tint="@color/ngopi_primary" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/status_step_order"
-                            android:textColor="@color/ngopi_ink"
-                            android:textSize="13sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:id="@+id/tvStepOrderTime"
-                            android:text="09.42 · Barista mulai bekerja"
-                            android:textColor="@color/ngopi_muted"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <!-- Step 3 (Active) -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_clock"
-                        app:tint="@color/ngopi_primary" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/status_step_brewing"
-                            android:textColor="@color/ngopi_primary"
-                            android:textSize="13sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:id="@+id/tvStepBrewTime"
-                            android:text="Diperbarui 09.45"
-                            android:textColor="@color/ngopi_muted"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <!-- Step 4 -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_location"
-                        app:tint="@color/ngopi_border" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/status_step_ready"
-                            android:textColor="@color/ngopi_muted"
-                            android:textSize="13sp" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Menunggu"
-                            android:textColor="@color/ngopi_muted"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-                </LinearLayout>
+                    android:layout_marginTop="4dp"
+                    android:orientation="vertical" />
             </LinearLayout>
 
             <!-- Order Detail Card -->
@@ -293,7 +177,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Rincian pesanan"
+                    android:text="@string/status_order_detail"
                     android:textColor="@color/ngopi_ink"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -321,7 +205,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Total pembayaran"
+                        android:text="@string/status_total_paid"
                         android:textColor="@color/ngopi_ink"
                         android:textSize="14sp"
                         android:textStyle="bold" />
