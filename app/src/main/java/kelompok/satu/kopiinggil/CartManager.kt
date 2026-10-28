@@ -137,6 +137,25 @@ object CartManager {
         persist()
     }
 
+    // Terapkan hasil quote-cart: harga diperbarui ke harga server, baris yang habis dihapus.
+    // Diabaikan kalau keranjang sudah berubah sejak dicek (jumlah baris berbeda).
+    fun applyQuote(quote: CartQuote): Boolean {
+        if (quote.lines.size != _items.size) return false
+        val updated = quote.lines.sortedBy { it.index }.mapNotNull { line ->
+            val item = _items[line.index]
+            if (line.isUnavailable) return@mapNotNull null
+            val deltas = line.options.associate { it.id to it.priceDelta }
+            item.copy(
+                barang = item.barang.copy(harga = line.basePrice),
+                pilihan = item.pilihan.map { it.copy(selisihHarga = deltas[it.id] ?: it.selisihHarga) },
+            )
+        }
+        _items.clear()
+        _items.addAll(updated)
+        persist()
+        return true
+    }
+
     // Kosongkan keranjang meja ini, termasuk yang tersimpan (sudah dibayar).
     fun clear() {
         _items.clear()

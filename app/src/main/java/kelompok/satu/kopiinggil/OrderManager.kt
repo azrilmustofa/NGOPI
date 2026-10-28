@@ -101,6 +101,52 @@ private data class CreatePaymentResult(
 )
 
 @Serializable
+private data class QuoteItemParam(
+    @SerialName("menu_item_id") val menuItemId: String,
+    val quantity: Int,
+    @SerialName("option_ids") val optionIds: List<String>,
+    @SerialName("unit_price_rp") val unitPrice: Int,
+)
+
+@Serializable
+private data class QuoteCartParams(val items: List<QuoteItemParam>)
+
+@Serializable
+data class QuoteOption(
+    val id: String,
+    @SerialName("price_delta_rp") val priceDelta: Int,
+)
+
+// Hasil cek satu baris keranjang dari quote-cart. index = urutan di CartManager.items saat dikirim.
+@Serializable
+data class QuoteLine(
+    val index: Int,
+    val status: String,
+    val name: String = "",
+    val reason: String? = null,
+    @SerialName("base_price_rp") val basePrice: Int = 0,
+    val options: List<QuoteOption> = emptyList(),
+    @SerialName("unit_price_rp") val unitPrice: Int = 0,
+) {
+    val isUnavailable: Boolean get() = status == "UNAVAILABLE"
+    val isChanged: Boolean get() = status != "OK"
+}
+
+// Hitungan resmi keranjang dari server (sebelum pesanan dibuat). Total hanya dari baris yang masih tersedia.
+@Serializable
+data class CartQuote(
+    val lines: List<QuoteLine>,
+    @SerialName("subtotal_rp") val subtotal: Int,
+    @SerialName("tax_rp") val tax: Int,
+    @SerialName("service_charge_rp") val service: Int = 0,
+    @SerialName("total_rp") val total: Int,
+    @SerialName("tax_percentage") val taxPercentage: Double = 0.0,
+    @SerialName("service_charge_percentage") val servicePercentage: Double = 0.0,
+) {
+    val hasChanges: Boolean get() = lines.any { it.isChanged }
+}
+
+@Serializable
 private data class OrderDto(
     val id: String,
     @SerialName("public_id") val publicId: String,
@@ -168,6 +214,25 @@ object OrderManager {
 
     // Perkiraan untuk tampilan checkout; angka resmi (dari app_settings) datang dari server.
     fun taxOf(subtotal: Int): Int = subtotal * 10 / 100
+
+    // Cek keranjang ke server (Edge Function quote-cart): harga terbaru, stok, pajak, dan service charge.
+    // Tidak membuat pesanan; dipakai Checkout untuk menampilkan total resmi dan layar "harga berubah".
+    suspend fun quoteCart(): CartQuote {
+        val body = json.encodeToString(
+            QuoteCartParams(
+                CartManager.items.map { item ->
+                    QuoteItemParam(item.barang.id, item.quantity, item.pilihan.map { it.id }, item.hargaSatuan)
+                }
+            )
+        )
+        val raw = callFunction("quote-cart", body)
+        return try {
+            json.decodeFromString<CartQuote>(raw)
+        } catch (e: SerializationException) {
+            android.util.Log.e("OrderManager", "Respons quote-cart tidak sesuai: $raw", e)
+            throw PaymentException("Respons server tidak sesuai. Pastikan fungsi quote-cart sudah di-deploy.")
+        }
+    }
 
     // Membuat pesanan + transaksi Midtrans Snap (Edge Function create-payment). Pembayaran BELUM lunas di sini:
     // status lunas hanya ditentukan webhook di server. checkoutKey menjaga agar coba ulang tidak membuat pesanan ganda
