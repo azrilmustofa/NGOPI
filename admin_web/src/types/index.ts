@@ -15,6 +15,7 @@ export interface CustomerOrder {
   checkout_key?: string;
   status: OrderStatus;
   subtotal_rp: number;
+  discount_rp?: number;
   tax_rp: number;
   service_charge_rp: number;
   total_rp: number;
@@ -31,6 +32,8 @@ export interface OrderItem {
   quantity: number;
   note?: string | null;
   line_total_rp: number;
+  discount_rp?: number;
+  promo_id?: string | null;
   options?: OrderItemOption[];
 }
 
@@ -84,4 +87,21 @@ export interface AppSettings {
   id: string;
   tax_percentage: number;
   service_charge_percentage: number;
+}
+
+export type DiscountType = 'PERCENT' | 'AMOUNT';
+
+export interface Promo {
+  id: string;
+  menu_item_id: string;
+  title: string;
+  description?: string | null;
+  discount_type: DiscountType;
+  discount_value: number;
+  starts_at: string;
+  ends_at: string;
+  priority: number;
+  is_active: boolean;
+  created_at?: string;
+  menu_item?: MenuItem;
 }

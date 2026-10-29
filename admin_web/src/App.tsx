@@ -5,6 +5,7 @@ import { Header } from './components/Header';
 import { DashboardPage } from './pages/DashboardPage';
 import { OrdersPage } from './pages/OrdersPage';
 import { MenuPage } from './pages/MenuPage';
+import { PromosPage } from './pages/PromosPage';
 import { TablesPage } from './pages/TablesPage';
 import { StaffPage } from './pages/StaffPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -81,6 +82,11 @@ const AdminLayout: React.FC = () => {
           title: 'Manajemen Katalog Menu',
           subtitle: 'Daftar produk, pengaturan harga, status stok habis/tersedia, dan kategori.',
         };
+      case 'promos':
+        return {
+          title: 'Manajemen Promo & Diskon',
+          subtitle: 'Atur diskon harga menu, kampanye berbatas waktu, dan banner promo aplikasi.',
+        };
       case 'tables':
         return {
           title: 'Manajemen Meja & Kode QR',
@@ -123,6 +129,7 @@ const AdminLayout: React.FC = () => {
           {currentTab === 'dashboard' && <DashboardPage onNavigate={setCurrentTab} />}
           {currentTab === 'orders' && <OrdersPage />}
           {currentTab === 'menu' && <MenuPage />}
+          {currentTab === 'promos' && <PromosPage />}
           {currentTab === 'tables' && <TablesPage />}
           {currentTab === 'staff' && <StaffPage />}
           {currentTab === 'settings' && <SettingsPage />}

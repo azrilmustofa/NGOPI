@@ -434,6 +434,12 @@ export const OrdersPage: React.FC = () => {
                 <span>Subtotal Menu</span>
                 <span>{formatRupiah(selectedOrder.subtotal_rp)}</span>
               </div>
+              {selectedOrder.discount_rp !== undefined && selectedOrder.discount_rp > 0 && (
+                <div className="flex justify-between text-emerald-600 font-medium">
+                  <span>Potongan Promo</span>
+                  <span>-{formatRupiah(selectedOrder.discount_rp)}</span>
+                </div>
+              )}
               {selectedOrder.tax_rp > 0 && (
                 <div className="flex justify-between">
                   <span>Pajak (PB1)</span>

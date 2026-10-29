@@ -28,6 +28,19 @@ create policy "promo_select_running" on public.promo
   for select to anon, authenticated
   using (is_active and now() >= starts_at and now() < ends_at);
 
+-- Staf dan Admin dapat membaca seluruh data promo (termasuk yang non-aktif atau kedaluwarsa)
+drop policy if exists "staff_promo_select" on public.promo;
+create policy "staff_promo_select" on public.promo
+  for select to authenticated
+  using (public.is_active_staff());
+
+-- Admin / Owner dapat mengelola (INSERT, UPDATE, DELETE) seluruh promo
+drop policy if exists "admin_promo_manage" on public.promo;
+create policy "admin_promo_manage" on public.promo
+  for all to authenticated
+  using (public.is_admin_or_owner())
+  with check (public.is_admin_or_owner());
+
 -- Catatan diskon di pesanan (customer_order.discount_rp sudah ada).
 alter table public.order_item add column if not exists discount_rp integer not null default 0;  -- potongan per porsi
 alter table public.order_item add column if not exists promo_id uuid references public.promo(id) on delete set null;

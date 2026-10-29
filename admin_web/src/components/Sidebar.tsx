@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   ClipboardList,
   Coffee,
+  BadgePercent,
   QrCode,
   Users,
   Settings,
@@ -10,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-export type NavTab = 'dashboard' | 'orders' | 'menu' | 'tables' | 'staff' | 'settings';
+export type NavTab = 'dashboard' | 'orders' | 'menu' | 'promos' | 'tables' | 'staff' | 'settings';
 
 interface SidebarProps {
   currentTab: NavTab;
@@ -37,6 +38,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, order
       id: 'menu',
       label: 'Katalog Menu',
       icon: <Coffee className="w-5 h-5" />,
+    },
+    {
+      id: 'promos',
+      label: 'Promo & Diskon',
+      icon: <BadgePercent className="w-5 h-5" />,
     },
     {
       id: 'tables',
