@@ -2,9 +2,9 @@ package kelompok.satu.kopiinggil
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import io.github.jan.supabase.auth.SignOutScope
@@ -21,18 +21,21 @@ class StaffHomeActivity : AppCompatActivity() {
 
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                .replace(R.id.staffFragmentContainer, StaffAntreanFragment(), TAG_ANTREAN)
-                .commit()
+                .setReorderingAllowed(true)
+                .add(R.id.staffFragmentContainer, StaffAntreanFragment(), TAG_ANTREAN)
+                .add(R.id.staffFragmentContainer, StaffRiwayatFragment(), TAG_RIWAYAT)
+                .commitNow()
+            showTab(TAG_ANTREAN)
         }
 
         bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_staff_antrean -> {
-                    showAntreanFragment()
+                    showTab(TAG_ANTREAN)
                     true
                 }
                 R.id.nav_staff_riwayat -> {
-                    Toast.makeText(this, R.string.staff_history_soon, Toast.LENGTH_SHORT).show()
+                    showTab(TAG_RIWAYAT)
                     true
                 }
                 R.id.nav_staff_akun -> {
@@ -44,17 +47,13 @@ class StaffHomeActivity : AppCompatActivity() {
         }
     }
 
-    private fun showAntreanFragment() {
-        val existing = supportFragmentManager.findFragmentByTag(TAG_ANTREAN)
-        if (existing == null) {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.staffFragmentContainer, StaffAntreanFragment(), TAG_ANTREAN)
-                .commit()
-        } else {
-            supportFragmentManager.beginTransaction()
-                .show(existing)
-                .commit()
+    private fun showTab(tag: String) {
+        val tabs = listOf(TAG_ANTREAN, TAG_RIWAYAT).mapNotNull<String, Fragment> {
+            supportFragmentManager.findFragmentByTag(it)
         }
+        supportFragmentManager.beginTransaction().setReorderingAllowed(true).apply {
+            tabs.forEach { if (it.tag == tag) show(it) else hide(it) }
+        }.commit()
     }
 
     private fun showLogoutDialog() {
@@ -79,5 +78,6 @@ class StaffHomeActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG_ANTREAN = "tag_staff_antrean"
+        private const val TAG_RIWAYAT = "tag_staff_riwayat"
     }
 }
