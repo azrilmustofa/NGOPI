@@ -193,9 +193,8 @@ class CheckoutActivity : AppCompatActivity() {
 
     // Membuat transaksi (atau memakai yang masih berjalan) lalu membuka pop-up Midtrans.
     private fun startPayment(consentPromo: Boolean) {
-        val existing = OrderManager.pendingPayment
-        if (existing != null) {
-            openSheet(existing.redirectUrl)
+        if (OrderManager.pendingPayment != null) {
+            continuePayment(retry = false)
             return
         }
         btnPay.isEnabled = false
@@ -205,6 +204,11 @@ class CheckoutActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 android.util.Log.e("Checkout", "Gagal membuat pembayaran", e)
                 Toast.makeText(this@CheckoutActivity, e.toUserMessage(this@CheckoutActivity, R.string.err_payment_create_failed), Toast.LENGTH_LONG).show()
+                // Server sudah menjawab gagal: pesanan dengan kunci ini (kalau sempat dibuat) sudah dibatalkan server,
+                // jadi percobaan berikutnya pakai kunci baru. Kunci lama hanya dipakai lagi kalau jaringan putus
+                // (server mungkin masih memproses) atau 409 (permintaan lain dengan kunci ini sedang berjalan).
+                val status = (e as? PaymentException)?.httpStatus
+                if (status != null && status != 409) checkoutKey = UUID.randomUUID().toString()
                 // Bisa jadi menu habis/harga berubah tepat sebelum bayar: cek ulang supaya pop-up perubahan muncul.
                 refreshQuote()
             } finally {
@@ -213,26 +217,58 @@ class CheckoutActivity : AppCompatActivity() {
         }
     }
 
+    // Pesanan sudah dibuat tapi belum lunas: buka lagi transaksi yang masih berlaku, atau (retry / sudah
+    // kedaluwarsa) minta transaksi baru untuk pesanan yang sama lewat retry-payment.
+    private fun continuePayment(retry: Boolean) {
+        btnPay.isEnabled = false
+        lifecycleScope.launch {
+            try {
+                val result = if (retry) OrderManager.retryPayment() else OrderManager.resumePayment()
+                when (result) {
+                    is PaymentResume.Open -> openSheet(result.redirectUrl)
+                    PaymentResume.Paid -> openStatus()
+                    is PaymentResume.Closed -> {
+                        // Pesanan lama ditutup server; tekan bayar lagi = pesanan baru (keranjang masih utuh).
+                        checkoutKey = UUID.randomUUID().toString()
+                        refreshQuote() // pesanan baru memakai harga terbaru
+                        AlertDialog.Builder(this@CheckoutActivity)
+                            .setTitle(R.string.pay_closed_title)
+                            .setMessage(result.message ?: getString(R.string.pay_closed_message))
+                            .setPositiveButton(android.R.string.ok, null)
+                            .show()
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("Checkout", "Gagal melanjutkan pembayaran", e)
+                Toast.makeText(this@CheckoutActivity, e.toUserMessage(this@CheckoutActivity, R.string.err_payment_create_failed), Toast.LENGTH_LONG).show()
+            } finally {
+                btnPay.isEnabled = true
+            }
+        }
+    }
+
+    private fun openStatus() {
+        startActivity(Intent(this, StatusPesananActivity::class.java).apply {
+            putExtra("EXTRA_CUSTOMER_PHONE", customerPhone)
+            putExtra("EXTRA_CUSTOMER_NAME", customerName)
+        })
+        finish()
+    }
+
     private fun openSheet(url: String) {
         btnPay.isEnabled = false
         SnapPaymentSheet(this, url) { state ->
             btnPay.isEnabled = true
             when (state) {
-                PaymentState.PAID -> {
-                    startActivity(Intent(this, StatusPesananActivity::class.java).apply {
-                        putExtra("EXTRA_CUSTOMER_PHONE", customerPhone)
-                        putExtra("EXTRA_CUSTOMER_NAME", customerName)
-                    })
-                    finish()
-                }
+                PaymentState.PAID -> openStatus()
+                // Pesanan tetap tersimpan; coba lagi = transaksi baru untuk pesanan yang sama.
                 PaymentState.FAILED -> {
-                    OrderManager.discardPending()
-                    checkoutKey = UUID.randomUUID().toString()
                     renderPending()
                     AlertDialog.Builder(this)
                         .setTitle(R.string.pay_failed_title)
                         .setMessage(R.string.pay_failed_message)
-                        .setPositiveButton(R.string.pay_failed_retry, null)
+                        .setPositiveButton(R.string.pay_failed_retry) { _, _ -> continuePayment(retry = true) }
+                        .setNegativeButton(R.string.pay_failed_later, null)
                         .show()
                 }
                 // Pop-up ditutup sebelum selesai: transaksi tetap berjalan, bisa dilanjutkan.

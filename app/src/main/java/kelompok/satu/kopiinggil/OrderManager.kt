@@ -8,6 +8,7 @@ import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Serializable
@@ -73,6 +74,24 @@ data class PendingPayment(
 )
 
 enum class PaymentState { PENDING, PAID, FAILED }
+
+// Hasil melanjutkan / mencoba ulang pembayaran pesanan yang sama.
+sealed interface PaymentResume {
+    data class Open(val redirectUrl: String) : PaymentResume
+    data object Paid : PaymentResume
+    // Pesanan sudah tidak bisa dibayar (kedaluwarsa / batas percobaan): bayar lagi = pesanan baru.
+    data class Closed(val message: String?) : PaymentResume
+}
+
+@Serializable
+private data class RetryPaymentParams(@SerialName("order_id") val orderId: String)
+
+@Serializable
+private data class RetryPaymentResult(
+    val status: String,
+    @SerialName("redirect_url") val redirectUrl: String? = null,
+    val message: String? = null,
+)
 
 @Serializable
 private data class ItemParam(
@@ -181,7 +200,28 @@ private data class PaymentAttemptDto(
     @SerialName("paid_at") val paidAt: String? = null,
 )
 
-class PaymentException(message: String) : Exception(message)
+// httpStatus: kode dari server (null = tidak sampai ke server, mis. jaringan putus).
+// Status terbaru satu pesanan + jam tiap status dicapai (dari order_status_history), untuk timeline pelanggan.
+data class OrderProgress(
+    val status: String,
+    val stepTimes: Map<String, String>,
+)
+
+@Serializable
+private data class OrderStatusDto(
+    val id: String,
+    val status: String = "",
+    @SerialName("paid_at") val paidAt: String? = null,
+    @SerialName("completed_at") val completedAt: String? = null,
+)
+
+@Serializable
+private data class StatusHistoryDto(
+    @SerialName("to_status") val toStatus: String = "",
+    @SerialName("created_at") val createdAt: String? = null,
+)
+
+class PaymentException(message: String, val httpStatus: Int? = null) : Exception(message)
 
 object OrderManager {
     var lastOrder: PlacedOrder? = null
@@ -200,14 +240,13 @@ object OrderManager {
     // Sama dengan masa berlaku transaksi di create-payment (30 menit).
     private const val PAYMENT_WINDOW_MS = 30 * 60_000L
 
+    // Batas satu kali ambil data. Saat jaringan baru tersambung lagi, permintaan bisa menggantung sampai
+    // ±100 detik (timeout bawaan); dipotong supaya putaran berikutnya langsung mencoba lagi.
+    private const val REQUEST_TIMEOUT_MS = 8_000L
+
     // Pesanan AWAITING_PAYMENT / CANCELLED belum jadi pesanan: tidak ditampilkan sebagai "diproses".
     // Nilai harus sesuai enum order_status di PostgreSQL Supabase (PAID, ACCEPTED, PREPARING, READY, COMPLETED).
     private val PAID_STATUSES = listOf("PAID", "ACCEPTED", "PREPARING", "READY", "COMPLETED")
-
-    // Transaksi gagal/kedaluwarsa tidak bisa dilanjutkan; pembayaran berikutnya membuat transaksi baru.
-    fun discardPending() {
-        pendingPayment = null
-    }
 
     fun clear() {
         lastOrder = null
@@ -276,6 +315,47 @@ object OrderManager {
         return pending
     }
 
+    // Lanjutkan pembayaran pesanan yang belum lunas: buka lagi transaksi yang masih berlaku,
+    // atau minta transaksi baru untuk pesanan yang sama kalau yang lama gagal/kedaluwarsa.
+    suspend fun resumePayment(): PaymentResume {
+        val pending = pendingPayment ?: return PaymentResume.Closed(null)
+        val state = try {
+            checkPayment()
+        } catch (e: Exception) {
+            PaymentState.PENDING
+        }
+        return when {
+            state == PaymentState.PAID -> PaymentResume.Paid
+            state == PaymentState.PENDING && System.currentTimeMillis() < pending.expiresAtMillis -> PaymentResume.Open(pending.redirectUrl)
+            else -> retryPayment()
+        }
+    }
+
+    // requestPaymentRetry (Edge Function retry-payment): transaksi Midtrans baru untuk PESANAN YANG SAMA,
+    // dengan nominal yang sudah terkunci. Server menjaga satu transaksi aktif per pesanan.
+    suspend fun retryPayment(): PaymentResume {
+        val pending = pendingPayment ?: return PaymentResume.Closed(null)
+        val raw = callFunction("retry-payment", json.encodeToString(RetryPaymentParams(pending.orderId)))
+        val result = try {
+            json.decodeFromString<RetryPaymentResult>(raw)
+        } catch (e: SerializationException) {
+            android.util.Log.e("OrderManager", "Respons retry-payment tidak sesuai: $raw", e)
+            throw PaymentException("Respons server tidak sesuai. Pastikan fungsi retry-payment sudah di-deploy.")
+        }
+        return when (result.status) {
+            "READY" -> {
+                val url = result.redirectUrl ?: throw PaymentException("Server tidak mengirim halaman pembayaran")
+                pendingPayment = pending.copy(redirectUrl = url, expiresAtMillis = System.currentTimeMillis() + PAYMENT_WINDOW_MS)
+                PaymentResume.Open(url)
+            }
+            "PAID" -> if (checkPayment() == PaymentState.PAID) PaymentResume.Paid else PaymentResume.Closed(null)
+            else -> {
+                pendingPayment = null
+                PaymentResume.Closed(result.message)
+            }
+        }
+    }
+
     // Membaca status percobaan pembayaran terakhir dari server. Kalau lunas, pesanan disimpan sebagai lastOrder
     // dan keranjang dikosongkan.
     suspend fun checkPayment(): PaymentState {
@@ -328,7 +408,7 @@ object OrderManager {
             val text = (if (ok) conn.inputStream else conn.errorStream)?.bufferedReader()?.use { it.readText() }.orEmpty()
             if (!ok) {
                 val message = runCatching { json.parseToJsonElement(text).jsonObject["error"]?.jsonPrimitive?.content }.getOrNull()
-                throw PaymentException(message ?: "Server menolak permintaan (${conn.responseCode})")
+                throw PaymentException(message ?: "Server menolak permintaan (${conn.responseCode})", conn.responseCode)
             }
             text
         } catch (e: PaymentException) {
@@ -340,6 +420,39 @@ object OrderManager {
         }
     }
 
+    // true kalau pengambilan daftar pesanan terakhir gagal (offline); daftar yang tampil adalah data terakhir.
+    var ordersOffline = false
+        private set
+
+    // Status terbaru satu pesanan untuk halaman status (dipanggil berkala). Riwayat status opsional:
+    // kalau belum bisa dibaca (policy belum ada), timeline tetap jalan tanpa jam.
+    suspend fun fetchProgress(order: PlacedOrder): OrderProgress = withTimeout(REQUEST_TIMEOUT_MS) {
+        val dto = supabase.from("customer_order").select {
+            filter { eq("public_id", order.number.removePrefix("#")) }
+            limit(1)
+        }.decodeList<OrderStatusDto>().firstOrNull() ?: throw PaymentException("Pesanan tidak ditemukan")
+
+        val history = try {
+            supabase.from("order_status_history").select {
+                filter { eq("order_id", dto.id) }
+                order("created_at", Order.ASCENDING)
+            }.decodeList<StatusHistoryDto>()
+        } catch (e: Exception) {
+            android.util.Log.w("OrderManager", "Riwayat status tidak bisa dibaca", e)
+            emptyList()
+        }
+        // Jam pertama kali tiap status dicapai.
+        val times = linkedMapOf<String, String>()
+        history.forEach { h -> if (h.createdAt != null) times.putIfAbsent(h.toStatus, formatTime(h.createdAt)) }
+        dto.paidAt?.let { times.putIfAbsent("PAID", formatTime(it)) }
+        dto.completedAt?.let { times.putIfAbsent("COMPLETED", formatTime(it)) }
+
+        // Samakan status di daftar pesanan supaya tab Pesanan langsung ikut berubah.
+        orderHistory = orderHistory.map { if (it.number == order.number) it.copy(status = dto.status) else it }
+        if (lastOrder?.number == order.number) lastOrder = lastOrder?.copy(status = dto.status)
+        OrderProgress(dto.status, times)
+    }
+
     suspend fun fetchOrders(): List<PlacedOrder> {
         val currentUser = supabase.auth.currentUserOrNull()
         if (currentUser == null) {
@@ -349,91 +462,96 @@ object OrderManager {
         }
 
         return try {
-            val orders = supabase.from("customer_order").select {
-                filter {
-                    eq("owner_uid", currentUser.id)
-                    isIn("status", PAID_STATUSES)
-                }
-                order("created_at", Order.DESCENDING)
-            }.decodeList<OrderDto>()
+            withTimeout(REQUEST_TIMEOUT_MS) { fetchOrdersOf(currentUser.id) }.also { ordersOffline = false }
+        } catch (e: Exception) {
+            android.util.Log.e("OrderManager", "Gagal memuat riwayat pesanan", e)
+            ordersOffline = true
+            orderHistory
+        }
+    }
 
-            if (orders.isEmpty()) {
-                lastOrder = null
-                orderHistory = emptyList()
-                return emptyList()
+    private suspend fun fetchOrdersOf(uid: String): List<PlacedOrder> {
+        val orders = supabase.from("customer_order").select {
+            filter {
+                eq("owner_uid", uid)
+                isIn("status", PAID_STATUSES)
             }
+            order("created_at", Order.DESCENDING)
+        }.decodeList<OrderDto>()
 
-            val orderIds = orders.map { it.id }
+        if (orders.isEmpty()) {
+            lastOrder = null
+            orderHistory = emptyList()
+            return emptyList()
+        }
 
-            val itemsMap: Map<String, List<OrderItemDto>> = try {
-                if (orderIds.isNotEmpty()) {
-                    supabase.from("order_item").select {
-                        filter { isIn("order_id", orderIds) }
-                    }.decodeList<OrderItemDto>().groupBy { it.orderId }
-                } else emptyMap()
-            } catch (e: Exception) {
-                android.util.Log.e("OrderManager", "Gagal memuat item pesanan", e)
-                emptyMap()
-            }
+        val orderIds = orders.map { it.id }
 
-            val tableMap: Map<String, CafeTable> = try {
-                supabase.from("cafe_table").select().decodeList<CafeTable>().associateBy { it.id }
-            } catch (_: Exception) {
-                emptyMap()
-            }
+        val itemsMap: Map<String, List<OrderItemDto>> = try {
+            if (orderIds.isNotEmpty()) {
+                supabase.from("order_item").select {
+                    filter { isIn("order_id", orderIds) }
+                }.decodeList<OrderItemDto>().groupBy { it.orderId }
+            } else emptyMap()
+        } catch (e: Exception) {
+            android.util.Log.e("OrderManager", "Gagal memuat item pesanan", e)
+            emptyMap()
+        }
 
-            val attemptsMap: Map<String, List<PaymentAttemptDto>> = try {
-                if (orderIds.isNotEmpty()) {
-                    supabase.from("payment_attempt").select {
-                        filter { isIn("order_id", orderIds) }
-                        order("created_at", Order.DESCENDING)
-                    }.decodeList<PaymentAttemptDto>().groupBy { it.orderId }
-                } else emptyMap()
-            } catch (_: Exception) {
-                emptyMap()
-            }
+        val tableMap: Map<String, CafeTable> = try {
+            supabase.from("cafe_table").select().decodeList<CafeTable>().associateBy { it.id }
+        } catch (_: Exception) {
+            emptyMap()
+        }
 
-            val result = orders.map { orderDto ->
-                val items = itemsMap[orderDto.id].orEmpty().map { itemDto ->
-                    CartItem(
-                        barang = DataBarang(
-                            id = itemDto.id,
-                            nama = itemDto.nameSnapshot,
-                            harga = itemDto.unitPrice,
-                        ),
-                        quantity = itemDto.quantity,
-                        catatan = itemDto.note.orEmpty(),
-                    )
-                }
+        val attemptsMap: Map<String, List<PaymentAttemptDto>> = try {
+            if (orderIds.isNotEmpty()) {
+                supabase.from("payment_attempt").select {
+                    filter { isIn("order_id", orderIds) }
+                    order("created_at", Order.DESCENDING)
+                }.decodeList<PaymentAttemptDto>().groupBy { it.orderId }
+            } else emptyMap()
+        } catch (_: Exception) {
+            emptyMap()
+        }
 
-                val tableNum = if (!orderDto.tableId.isNullOrEmpty()) {
-                    tableMap[orderDto.tableId]?.tableNumber ?: CartManager.tableNumber
-                } else {
-                    CartManager.tableNumber
-                }
-
-                val paymentMethod = MetodeBayar.fromProvider(attemptsMap[orderDto.id]?.firstOrNull()?.paymentMethod)
-
-                PlacedOrder(
-                    number = "#${orderDto.publicId}",
-                    table = tableNum,
-                    items = items,
-                    subtotal = orderDto.subtotal,
-                    tax = orderDto.tax,
-                    total = orderDto.total,
-                    method = paymentMethod,
-                    paidAt = formatTime(orderDto.paidAt ?: orderDto.createdAt),
-                    status = orderDto.status,
+        val result = orders.map { orderDto ->
+            val items = itemsMap[orderDto.id].orEmpty().map { itemDto ->
+                CartItem(
+                    barang = DataBarang(
+                        id = itemDto.id,
+                        nama = itemDto.nameSnapshot,
+                        harga = itemDto.unitPrice,
+                    ),
+                    quantity = itemDto.quantity,
+                    catatan = itemDto.note.orEmpty(),
                 )
             }
 
-            orderHistory = result
-            lastOrder = result.firstOrNull()
-            result
-        } catch (e: Exception) {
-            android.util.Log.e("OrderManager", "Gagal memuat riwayat pesanan", e)
-            orderHistory
+            val tableNum = if (!orderDto.tableId.isNullOrEmpty()) {
+                tableMap[orderDto.tableId]?.tableNumber ?: CartManager.tableNumber
+            } else {
+                CartManager.tableNumber
+            }
+
+            val paymentMethod = MetodeBayar.fromProvider(attemptsMap[orderDto.id]?.firstOrNull()?.paymentMethod)
+
+            PlacedOrder(
+                number = "#${orderDto.publicId}",
+                table = tableNum,
+                items = items,
+                subtotal = orderDto.subtotal,
+                tax = orderDto.tax,
+                total = orderDto.total,
+                method = paymentMethod,
+                paidAt = formatTime(orderDto.paidAt ?: orderDto.createdAt),
+                status = orderDto.status,
+            )
         }
+
+        orderHistory = result
+        lastOrder = result.firstOrNull()
+        return result
     }
 
     suspend fun fetchLatestOrder(): PlacedOrder? {

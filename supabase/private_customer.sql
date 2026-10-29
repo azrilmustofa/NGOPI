@@ -3,8 +3,8 @@
 -- terpisah dari customer_order supaya tidak ikut terbaca di antrean staf.
 -- Jalankan sekali di Supabase Dashboard -> SQL Editor.
 
--- Persetujuan menerima promo (opsional di Checkout). Persetujuan WA wajib, dicatat lewat consented_at + consent_version.
-alter table public.private_customer add column if not exists promo_consent boolean not null default false;
+-- Persetujuan promo memakai kolom bawaan promotion_consent; promo_consent sempat ditambahkan dobel, dihapus.
+alter table public.private_customer drop column if exists promo_consent;
 
 -- Hanya Edge Function (service role) yang menulis/membaca tabel ini. Tanpa policy = tidak bisa diakses dari app.
 alter table public.private_customer enable row level security;

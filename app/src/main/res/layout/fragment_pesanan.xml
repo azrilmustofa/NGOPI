@@ -52,6 +52,19 @@
             android:text="Pantau status pesanan dan rincian transaksi meja kamu."
             android:textColor="@color/ngopi_muted"
             android:textSize="13sp" />
+
+        <!-- Gagal memuat (offline): daftar yang tampil adalah data terakhir -->
+        <TextView
+            android:id="@+id/tvPesananOffline"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_note"
+            android:padding="10dp"
+            android:text="@string/orders_offline"
+            android:textColor="@color/ngopi_ink"
+            android:textSize="12sp"
+            android:visibility="gone" />
     </LinearLayout>
 
     <ScrollView
