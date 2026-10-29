@@ -16,6 +16,8 @@ import androidx.lifecycle.lifecycleScope
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -39,11 +41,19 @@ private data class StaffOrderDetailDto(
 )
 
 @Serializable
+private data class StaffCustomerDto(
+    @SerialName("order_id") val orderId: String = "",
+    val name: String = "",
+    @SerialName("phone_e164") val phoneE164: String = "",
+)
+
+@Serializable
 private data class StaffOrderItemDetailDto(
     val id: String = "",
     @SerialName("order_id") val orderId: String = "",
     @SerialName("name_snapshot") val nameSnapshot: String = "",
     val quantity: Int = 1,
+    @SerialName("line_total_rp") val lineTotalRp: Int = 0,
     val note: String? = null,
 )
 
@@ -82,6 +92,9 @@ class StaffDetailProduksiActivity : AppCompatActivity() {
     private var items = listOf<StaffOrderItemDetailDto>()
     private var optionsMap = mapOf<String, List<StaffOrderItemOptionDto>>()
     private var statusHistories = listOf<OrderStatusHistoryDto>()
+    private var customerName: String = ""
+    private var customerPhone: String = ""
+    private var totalRp: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -117,9 +130,23 @@ class StaffDetailProduksiActivity : AppCompatActivity() {
                 if (order != null) {
                     if (order.publicId.isNotBlank()) publicId = order.publicId
                     currentStatus = order.status
+                    totalRp = order.totalRp
                     createdAtIso = order.createdAt
                     paidAtIso = order.paidAt
                     updatedAtIso = order.updatedAt
+                }
+
+                // Ambil data pemesan untuk keperluan kirim nota via WhatsApp
+                try {
+                    val cust = supabase.postgrest["private_customer"].select {
+                        filter { eq("order_id", orderId) }
+                    }.decodeList<StaffCustomerDto>().firstOrNull()
+                    if (cust != null) {
+                        customerName = cust.name
+                        customerPhone = cust.phoneE164
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.w("StaffDetail", "Tidak dapat membaca private_customer: ${e.message}")
                 }
 
                 // Ambil order item
@@ -282,6 +309,7 @@ class StaffDetailProduksiActivity : AppCompatActivity() {
             updateStatusTo("COMPLETED") { success ->
                 btnMarkCompleted.isEnabled = true
                 if (success) {
+                    sendCompletedReceiptWhatsApp()
                     Toast.makeText(this@StaffDetailProduksiActivity, "Pesanan #$publicId selesai!", Toast.LENGTH_LONG).show()
                     finish()
                 }
@@ -503,6 +531,45 @@ class StaffDetailProduksiActivity : AppCompatActivity() {
             formatter.format(date ?: Date())
         } catch (_: Exception) {
             SimpleDateFormat("HH.mm", Locale.forLanguageTag("id-ID")).format(Date())
+        }
+    }
+
+    private fun sendCompletedReceiptWhatsApp() {
+        if (customerPhone.isBlank()) {
+            android.util.Log.d("StaffDetail", "Tidak mengirim nota WA: nomor telepon pemesan kosong")
+            return
+        }
+
+        val itemsSummary = items.map { item ->
+            val opts = optionsMap[item.id].orEmpty().map { it.optionNameSnapshot }
+            val priceStr = if (item.lineTotalRp > 0) " (${item.lineTotalRp.toRupiah()})" else ""
+            val base = "• *${item.quantity}x ${item.nameSnapshot}*$priceStr"
+            val withOpts = if (opts.isNotEmpty()) "$base\n   _Pilihan: ${opts.joinToString(", ")}_" else base
+            if (!item.note.isNullOrBlank()) "$withOpts\n   _Catatan: ${item.note}_" else withOpts
+        }
+
+        val timeStr = formatTime(paidAtIso ?: createdAtIso)
+        val displayName = customerName.ifBlank { "Pelanggan" }
+        val msg = WhatsAppBotService.buildCompletedReceiptText(
+            orderNumber = publicId.ifBlank { orderId.take(8) },
+            tableLabel = tableLabel,
+            paidAtTime = timeStr,
+            customerName = displayName,
+            itemsSummary = itemsSummary,
+            totalRp = totalRp,
+        )
+
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = WhatsAppBotService.sendTextMessage(
+                rawPhone = customerPhone,
+                message = msg,
+                orderNumber = publicId.ifBlank { orderId },
+            )
+            if (result.isSuccess) {
+                android.util.Log.i("StaffDetail", "Nota WA berhasil dikirim ke $customerPhone")
+            } else {
+                android.util.Log.w("StaffDetail", "Gagal kirim nota WA: ${result.exceptionOrNull()?.message}")
+            }
         }
     }
 

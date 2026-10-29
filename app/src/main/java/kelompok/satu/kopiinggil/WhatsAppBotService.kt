@@ -89,28 +89,49 @@ object WhatsAppBotService {
         return sb.toString().trim()
     }
 
-    suspend fun sendReceipt(
-        order: PlacedOrder,
-        targetPhone: String? = null,
-        targetName: String? = null,
+    fun buildCompletedReceiptText(
+        orderNumber: String,
+        tableLabel: String,
+        paidAtTime: String,
+        customerName: String,
+        itemsSummary: List<String>,
+        totalRp: Int,
+    ): String {
+        val sb = StringBuilder()
+        sb.appendLine("☕ *KOPI INGGIL*")
+        sb.appendLine("Jl. Raya Cafe No. 1, Yogyakarta")
+        sb.appendLine("----------------------------------------")
+        sb.appendLine("*NOTA TRANSAKSI PEMESANAN*")
+        sb.appendLine("No. Pesanan : *$orderNumber*")
+        sb.appendLine("Meja        : *$tableLabel*")
+        sb.appendLine("Waktu       : $paidAtTime WIB")
+        sb.appendLine("Nama Akun   : $customerName")
+        sb.appendLine("Pembayaran  : LUNAS")
+        sb.appendLine("----------------------------------------")
+        sb.appendLine("*RINCIAN PESANAN:*")
+        for (item in itemsSummary) {
+            sb.appendLine(item)
+        }
+        sb.appendLine("----------------------------------------")
+        sb.appendLine("*TOTAL BAYAR   : ${totalRp.toRupiah()}*")
+        sb.appendLine("----------------------------------------")
+        sb.appendLine("Status: *SELESAI*")
+        sb.appendLine()
+        sb.appendLine("Pesanan Anda telah selesai dan siap dinikmati.")
+        sb.appendLine("Terima kasih telah memesan di Kopi Inggil! 🙏")
+        return sb.toString().trim()
+    }
+
+    suspend fun sendTextMessage(
+        rawPhone: String,
+        message: String,
+        orderNumber: String? = null,
     ): Result<String> = withContext(Dispatchers.IO) {
-        val user = supabase.auth.currentUserOrNull()
-        val metadata = user?.userMetadata
-
-        val name = targetName?.takeIf { it.isNotBlank() }
-            ?: metadata?.get("full_name")?.jsonPrimitive?.content?.takeIf { it.isNotBlank() }
-            ?: user?.email.orEmpty().substringBefore("@").ifBlank { "Pelanggan" }
-
-        val rawPhone = targetPhone?.takeIf { it.isNotBlank() }
-            ?: metadata?.get("phone")?.jsonPrimitive?.content.orEmpty()
-
         val chatId = formatChatId(rawPhone)
-            ?: return@withContext Result.failure(IllegalStateException("Nomor WhatsApp belum terdaftar di profil akun"))
+            ?: return@withContext Result.failure(IllegalStateException("Nomor WhatsApp tidak valid"))
 
-        val message = buildReceiptText(order, name)
         val payload = json.encodeToString(WahaSendTextRequest(session = "default", chatId = chatId, text = message))
 
-        // Urutan percobaan: endpoint yang sebelumnya berhasil dulu, baru kandidat lain
         val endpointsToTry = buildList {
             activeBaseUrl?.let { add(it) }
             addAll(CANDIDATE_URLS.filter { it != activeBaseUrl })
@@ -135,7 +156,7 @@ object WhatsAppBotService {
 
                 if (code in 200..299) {
                     activeBaseUrl = baseUrl
-                    lastSentOrderNumber = order.number
+                    if (orderNumber != null) lastSentOrderNumber = orderNumber
                     Log.i(TAG, "Nota berhasil dikirim ke $chatId via $baseUrl: $responseBody")
                     return@withContext Result.success(responseBody)
                 } else {
@@ -149,7 +170,6 @@ object WhatsAppBotService {
                         else -> responseBody.ifBlank { "Bot WAHA merespons HTTP $code" }
                     }
                     lastError = Exception(userMsg)
-                    // Endpoint ditemukan tapi WAHA mengembalikan error aplikasi (misal session belum login)
                     break
                 }
             } catch (e: Exception) {
@@ -159,5 +179,28 @@ object WhatsAppBotService {
         }
 
         Result.failure(lastError ?: Exception("Tidak dapat terhubung ke bot WhatsApp WAHA"))
+    }
+
+    suspend fun sendReceipt(
+        order: PlacedOrder,
+        targetPhone: String? = null,
+        targetName: String? = null,
+    ): Result<String> {
+        val user = supabase.auth.currentUserOrNull()
+        val metadata = user?.userMetadata
+
+        val name = targetName?.takeIf { it.isNotBlank() }
+            ?: metadata?.get("full_name")?.jsonPrimitive?.content?.takeIf { it.isNotBlank() }
+            ?: user?.email.orEmpty().substringBefore("@").ifBlank { "Pelanggan" }
+
+        val rawPhone = targetPhone?.takeIf { it.isNotBlank() }
+            ?: metadata?.get("phone")?.jsonPrimitive?.content.orEmpty()
+
+        if (formatChatId(rawPhone) == null) {
+            return Result.failure(IllegalStateException("Nomor WhatsApp belum terdaftar di profil akun"))
+        }
+
+        val message = buildReceiptText(order, name)
+        return sendTextMessage(rawPhone, message, order.number)
     }
 }

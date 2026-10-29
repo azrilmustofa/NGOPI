@@ -54,4 +54,27 @@ class WhatsAppBotTest {
         assertTrue(receipt.contains("QRIS (LUNAS)"))
         assertTrue(receipt.contains("Rp50.600"))
     }
+
+    @Test
+    fun buildCompletedReceiptText_containsEssentialDetails() {
+        val itemsSummary = listOf(
+            "• *2x Kopi Gula Aren* (Rp36.000)\n   _Pilihan: Less Sugar_\n   _Catatan: Jangan terlalu manis_"
+        )
+        val receipt = WhatsAppBotService.buildCompletedReceiptText(
+            orderNumber = "NG-TEST99",
+            tableLabel = "Meja 03",
+            paidAtTime = "14.20",
+            customerName = "Daffa",
+            itemsSummary = itemsSummary,
+            totalRp = 36000,
+        )
+        assertNotNull(receipt)
+        assertTrue(receipt.contains("KOPI INGGIL"))
+        assertTrue(receipt.contains("NG-TEST99"))
+        assertTrue(receipt.contains("Meja 03"))
+        assertTrue(receipt.contains("Daffa"))
+        assertTrue(receipt.contains("Kopi Gula Aren"))
+        assertTrue(receipt.contains("Status: *SELESAI*"))
+        assertTrue(receipt.contains("Rp36.000"))
+    }
 }

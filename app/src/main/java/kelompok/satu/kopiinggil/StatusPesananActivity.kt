@@ -50,15 +50,6 @@ class StatusPesananActivity : AppCompatActivity() {
 
         render()
 
-        // Kirim otomatis jika belum pernah terkirim untuk pesanan ini
-        if (progress.status != "COMPLETED") {
-            if (WhatsAppBotService.lastSentOrderNumber != order.number) {
-                sendWhatsAppReceipt(order, userInitiated = false, targetPhone = extraPhone, targetName = extraName)
-            } else {
-                showReceiptSuccess()
-            }
-        }
-
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 // Tiap 5 detik, dan langsung begitu koneksi tersambung lagi; berhenti kalau selesai/batal.
@@ -107,10 +98,9 @@ class StatusPesananActivity : AppCompatActivity() {
             findViewById<View>(R.id.btnCallCashier).setOnClickListener {
                 Toast.makeText(this, R.string.invalid_call_cashier_todo, Toast.LENGTH_SHORT).show()
             }
-            findViewById<View>(R.id.cardReceipt).setOnClickListener {
-                sendWhatsAppReceipt(order, userInitiated = true, targetPhone = extraPhone, targetName = extraName)
-            }
-            if (WhatsAppBotService.lastSentOrderNumber == order.number) showReceiptSuccess()
+            findViewById<View>(R.id.cardReceipt).isClickable = false
+            findViewById<TextView>(R.id.tvReceiptNote).text =
+                "Struk WhatsApp akan dikirimkan barista setelah pesanan selesai."
         }
 
         findViewById<TextView>(R.id.tvStatusTitle).setText(
@@ -218,42 +208,6 @@ class StatusPesananActivity : AppCompatActivity() {
     private fun backToHome(navItemId: Int) {
         HomeActivity.pendingTab = navItemId
         finish()
-    }
-
-    private fun sendWhatsAppReceipt(
-        order: PlacedOrder,
-        userInitiated: Boolean,
-        targetPhone: String? = null,
-        targetName: String? = null,
-    ) {
-        val tvReceiptNote = findViewById<TextView?>(R.id.tvReceiptNote)
-        val ivReceiptIcon = findViewById<ImageView?>(R.id.ivReceiptIcon)
-        tvReceiptNote?.text = "Mengirim nota ke nomor WhatsApp akun Anda..."
-        ivReceiptIcon?.imageTintList = ColorStateList.valueOf(ContextCompat.getColor(this, R.color.ngopi_muted))
-
-        lifecycleScope.launch {
-            val result = WhatsAppBotService.sendReceipt(order, targetPhone = targetPhone, targetName = targetName)
-            if (result.isSuccess) {
-                showReceiptSuccess()
-                if (userInitiated) {
-                    Toast.makeText(this@StatusPesananActivity, "Nota berhasil dikirim ke WhatsApp!", Toast.LENGTH_SHORT).show()
-                }
-            } else {
-                val err = result.exceptionOrNull()?.message.orEmpty()
-                findViewById<ImageView?>(R.id.ivReceiptIcon)?.imageTintList =
-                    ColorStateList.valueOf(ContextCompat.getColor(this@StatusPesananActivity, R.color.ngopi_error))
-                findViewById<TextView?>(R.id.tvReceiptNote)?.text = "Nota WhatsApp belum terkirim. Ketuk untuk coba kirim lagi."
-                if (userInitiated) {
-                    Toast.makeText(this@StatusPesananActivity, err.ifBlank { "Gagal mengirim nota" }, Toast.LENGTH_LONG).show()
-                }
-            }
-        }
-    }
-
-    private fun showReceiptSuccess() {
-        findViewById<ImageView?>(R.id.ivReceiptIcon)?.imageTintList =
-            ColorStateList.valueOf(ContextCompat.getColor(this, R.color.ngopi_primary))
-        findViewById<TextView?>(R.id.tvReceiptNote)?.text = "Nota transaksi telah dikirim ke nomor WhatsApp di akun Anda."
     }
 
     override fun onDestroy() {
