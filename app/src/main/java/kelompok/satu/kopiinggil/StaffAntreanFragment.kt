@@ -10,9 +10,12 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -78,14 +81,24 @@ class StaffAntreanFragment : Fragment(R.layout.fragment_staff_antrean) {
         setupFilterChips()
         tvSyncText.setOnClickListener {
             Toast.makeText(requireContext(), "Memperbarui antrean...", Toast.LENGTH_SHORT).show()
-            fetchOrdersFromSupabase()
+            fetchOrdersFromSupabase(isSilent = false)
         }
-        fetchOrdersFromSupabase()
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                requireContext().pollEvery(POLL_INTERVAL_MS) {
+                    if (isAdded && !isHidden) {
+                        fetchOrdersFromSupabase(isSilent = true)
+                    }
+                    true
+                }
+            }
+        }
     }
 
     override fun onResume() {
         super.onResume()
-        fetchOrdersFromSupabase()
+        fetchOrdersFromSupabase(isSilent = true)
     }
 
     private fun setupFilterChips() {
@@ -122,7 +135,7 @@ class StaffAntreanFragment : Fragment(R.layout.fragment_staff_antrean) {
         chipSiap.setActive(selectedFilter == "SIAP")
     }
 
-    private fun fetchOrdersFromSupabase() {
+    private fun fetchOrdersFromSupabase(isSilent: Boolean = false) {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 // Ambil daftar meja untuk pemetaan label
@@ -133,22 +146,31 @@ class StaffAntreanFragment : Fragment(R.layout.fragment_staff_antrean) {
                 }
                 val tableMap = tables.associateBy { it.id }
 
-                // Ambil daftar pesanan dari customer_order
+                // Ambil daftar pesanan dari customer_order dengan urutan terbaru di atas
                 val orders: List<StaffOrderDto> = try {
-                    supabase.postgrest["customer_order"].select().decodeList()
+                    supabase.postgrest["customer_order"].select {
+                        order("created_at", Order.DESCENDING)
+                    }.decodeList()
                 } catch (_: Exception) {
                     emptyList()
                 }
 
+                // Urutkan kembali secara descending di memori untuk memastikan yang terbaru selalu di paling atas
+                val sortedOrders = orders.sortedByDescending { it.createdAt.orEmpty() }
+                val orderIds = sortedOrders.map { it.id }
+
                 // Ambil item pesanan dari order_item
                 val itemsMap: Map<String, List<StaffOrderItemDto>> = try {
-                    val allItems: List<StaffOrderItemDto> = supabase.postgrest["order_item"].select().decodeList()
-                    allItems.groupBy { it.orderId }
+                    if (orderIds.isNotEmpty()) {
+                        supabase.postgrest["order_item"].select {
+                            filter { isIn("order_id", orderIds) }
+                        }.decodeList<StaffOrderItemDto>().groupBy { it.orderId }
+                    } else emptyMap()
                 } catch (_: Exception) {
                     emptyMap()
                 }
 
-                allOrders = orders.map { orderDto ->
+                val newOrders = sortedOrders.map { orderDto ->
                     val tableObj = tableMap[orderDto.tableId]
                     val tableLabel = tableObj?.label ?: if (orderDto.tableId.isNotEmpty()) orderDto.tableId else "Meja --"
                     val items = itemsMap[orderDto.id].orEmpty()
@@ -160,13 +182,19 @@ class StaffAntreanFragment : Fragment(R.layout.fragment_staff_antrean) {
                     StaffOrderData(orderDto, tableLabel, summary)
                 }
 
-                updateMetrics()
-                renderList()
+                val isFirstLoad = llQueueContainer.childCount == 0
+                if (isFirstLoad || newOrders != allOrders) {
+                    allOrders = newOrders
+                    updateMetrics()
+                    renderList()
+                }
 
                 val time = SimpleDateFormat("HH.mm", Locale.forLanguageTag("id-ID")).format(Date())
                 tvSyncText.text = getString(R.string.app_name) + " · Sinkron " + time
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), e.toUserMessage(requireContext(), R.string.err_queue_load_failed), Toast.LENGTH_LONG).show()
+                if (!isSilent) {
+                    Toast.makeText(requireContext(), e.toUserMessage(requireContext(), R.string.err_queue_load_failed), Toast.LENGTH_LONG).show()
+                }
             }
         }
     }
@@ -276,5 +304,9 @@ class StaffAntreanFragment : Fragment(R.layout.fragment_staff_antrean) {
         } catch (_: Exception) {
             SimpleDateFormat("HH.mm", Locale.forLanguageTag("id-ID")).format(Date())
         }
+    }
+
+    companion object {
+        private const val POLL_INTERVAL_MS = 3500L
     }
 }
