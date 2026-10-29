@@ -149,11 +149,11 @@ class LoginActivity : AppCompatActivity() {
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                         android.widget.Toast.makeText(
                             this@LoginActivity,
-                            "Masuk sebagai Kasir: ${staff.name} (Modul Kasir sedang disiapkan)",
-                            android.widget.Toast.LENGTH_LONG
+                            getString(R.string.staff_welcome, staff.name),
+                            android.widget.Toast.LENGTH_SHORT
                         ).show()
                     }
-                    openMainAndClearStack()
+                    openKasirDashboardAndClearStack()
                 }
                 "ADMIN", "OWNER" -> {
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {

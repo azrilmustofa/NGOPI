@@ -9,8 +9,7 @@
 
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_height="match_parent"
         android:fillViewport="true"
         android:scrollbars="none">
 
@@ -73,7 +72,7 @@
                         android:id="@+id/tvCountPerluBantuan"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="03"
+                        android:text="00"
                         android:textColor="@color/white"
                         android:textSize="26sp"
                         android:textStyle="bold" />
@@ -102,7 +101,7 @@
                         android:id="@+id/tvCountBayarTertunda"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="02"
+                        android:text="00"
                         android:textColor="@color/white"
                         android:textSize="26sp"
                         android:textStyle="bold" />
@@ -137,116 +136,17 @@
                 <include layout="@layout/item_kasir_attention" />
             </LinearLayout>
 
+            <TextView
+                android:id="@+id/tvKasirAttentionEmpty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:gravity="center"
+                android:text="Semua layanan berjalan lancar.\nTidak ada transaksi atau bantuan yang tertunda."
+                android:textColor="@color/ngopi_muted"
+                android:textSize="13sp"
+                android:visibility="gone" />
+
         </LinearLayout>
     </ScrollView>
-
-    <!-- Kasir Role Bottom Navigation -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/ngopi_surface"
-        android:elevation="8dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingTop="10dp"
-        android:paddingBottom="12dp">
-
-        <LinearLayout
-            android:id="@+id/btnNavKasirBeranda"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <ImageView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_coffee"
-                app:tint="@color/ngopi_primary" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Beranda"
-                android:textColor="@color/ngopi_primary"
-                android:textSize="11sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/btnNavKasirTransaksi"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <ImageView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_receipt"
-                app:tint="@color/ngopi_muted" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Transaksi"
-                android:textColor="@color/ngopi_muted"
-                android:textSize="11sp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/btnNavKasirBantuan"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <ImageView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_help"
-                app:tint="@color/ngopi_muted" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Bantuan"
-                android:textColor="@color/ngopi_muted"
-                android:textSize="11sp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/btnNavKasirAkun"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <ImageView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_person"
-                app:tint="@color/ngopi_muted" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Akun"
-                android:textColor="@color/ngopi_muted"
-                android:textSize="11sp" />
-        </LinearLayout>
-    </LinearLayout>
-
 </LinearLayout>

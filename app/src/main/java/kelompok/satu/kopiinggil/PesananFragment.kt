@@ -103,13 +103,17 @@ class PesananFragment : Fragment(R.layout.fragment_pesanan) {
                 if (order.status.equals("COMPLETED", true)) {
                     tvOrderStatusBadge.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.ngopi_border))
                     tvOrderStatusBadge.setTextColor(ContextCompat.getColor(requireContext(), R.color.ngopi_muted))
+                } else if (order.status.equals("CANCELLED", true)) {
+                    tvOrderStatusBadge.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.ngopi_error))
+                    tvOrderStatusBadge.setTextColor(ContextCompat.getColor(requireContext(), R.color.white))
                 } else {
                     tvOrderStatusBadge.backgroundTintList = null
                     tvOrderStatusBadge.setTextColor(ContextCompat.getColor(requireContext(), R.color.ngopi_primary))
                 }
 
                 val tableInfo = if (order.table > 0) "Meja ${order.table} · " else ""
-                tvOrderSubtitle.text = "${tableInfo}Dibayar pukul ${order.paidAt} · ${order.method.label}"
+                val actionInfo = if (order.status.equals("CANCELLED", true)) "Dibatalkan" else "Dibayar pukul ${order.paidAt}"
+                tvOrderSubtitle.text = "$tableInfo$actionInfo · ${order.method.label}"
                 llPesananItemsList.bindOrderLines(order.items)
                 tvPesananTotal.text = order.total.toRupiah()
 

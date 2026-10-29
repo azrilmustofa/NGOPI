@@ -35,6 +35,15 @@ fun AppCompatActivity.openStaffDashboardAndClearStack() {
     )
 }
 
+fun AppCompatActivity.openKasirDashboardAndClearStack() {
+    CartManager.unload()
+    OrderManager.clear()
+    startActivity(
+        Intent(this, KasirHomeActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+    )
+}
+
 fun String.isValidEmail(): Boolean = Patterns.EMAIL_ADDRESS.matcher(this).matches()
 
 fun String.isValidPhone(): Boolean = replace(Regex("[\\s-]"), "").matches(Regex("\\d{9,13}"))

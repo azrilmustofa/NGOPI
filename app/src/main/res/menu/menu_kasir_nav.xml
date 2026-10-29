@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_kasir_beranda"
+        android:icon="@drawable/ic_coffee"
+        android:title="Beranda" />
+    <item
+        android:id="@+id/nav_kasir_transaksi"
+        android:icon="@drawable/ic_receipt"
+        android:title="Transaksi" />
+    <item
+        android:id="@+id/nav_kasir_bantuan"
+        android:icon="@drawable/ic_help"
+        android:title="Bantuan" />
+    <item
+        android:id="@+id/nav_kasir_akun"
+        android:icon="@drawable/ic_person"
+        android:title="Akun" />
+</menu>

@@ -244,9 +244,9 @@ object OrderManager {
     // ±100 detik (timeout bawaan); dipotong supaya putaran berikutnya langsung mencoba lagi.
     private const val REQUEST_TIMEOUT_MS = 8_000L
 
-    // Pesanan AWAITING_PAYMENT / CANCELLED belum jadi pesanan: tidak ditampilkan sebagai "diproses".
-    // Nilai harus sesuai enum order_status di PostgreSQL Supabase (PAID, ACCEPTED, PREPARING, READY, COMPLETED).
-    private val PAID_STATUSES = listOf("PAID", "ACCEPTED", "PREPARING", "READY", "COMPLETED")
+    // Pesanan yang tampil di riwayat pelanggan: lunas/diproses, selesai, dan dibatalkan.
+    // Nilai harus sesuai enum order_status di PostgreSQL Supabase (PAID, ACCEPTED, PREPARING, READY, COMPLETED, CANCELLED).
+    private val PAID_STATUSES = listOf("PAID", "ACCEPTED", "PREPARING", "READY", "COMPLETED", "CANCELLED")
 
     fun clear() {
         lastOrder = null
