@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Badge status SELESAI di riwayat produksi staf. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/ngopi_badge" />
+    <corners android:radius="7dp" />
+</shape>

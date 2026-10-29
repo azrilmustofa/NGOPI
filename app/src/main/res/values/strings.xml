@@ -241,6 +241,8 @@
     <string name="done_total">Total dibayar</string>
     <string name="done_receipt_note">Struk dikirim ke WhatsApp. Jika belum sampai, hubungi Kasir.</string>
     <string name="done_btn_orders">Lihat pesanan sebelumnya</string>
+    <string name="cart_eyebrow">LANGKAH 1 DARI 3</string>
+    <string name="orders_eyebrow">PESANAN MEJA INI</string>
     <string name="orders_offline">Koneksi terputus. Menampilkan data terakhir.</string>
 
     <!-- Menunggu Verifikasi (05) -->
@@ -373,4 +375,21 @@
     <string name="profile_help_info">Butuh bantuan? Panggil Kasir atau barista terdekat dari mejamu.</string>
     <string name="profile_terms_info">Syarat &amp; Kebijakan Privasi akan segera tersedia.</string>
     <string name="staff_history_soon">Riwayat barista belum tersedia</string>
+    <string name="staff_history_brand">NGOPI / OPERASIONAL</string>
+    <string name="staff_history_title">Riwayat produksi</string>
+    <string name="staff_history_today_badge">HARI INI</string>
+    <string name="staff_history_sync">Pesanan yang kamu selesaikan · Sinkron %1$s</string>
+    <string name="staff_history_count_done">Selesai</string>
+    <string name="staff_history_avg_time">Rata-rata</string>
+    <string name="staff_history_count_cancelled">Dibatalkan</string>
+    <string name="staff_history_filter_today">Hari ini</string>
+    <string name="staff_history_filter_yesterday">Kemarin</string>
+    <string name="staff_history_filter_week">7 hari</string>
+    <string name="staff_history_filter_date">Tanggal</string>
+    <string name="staff_history_empty">Belum ada pesanan selesai di periode ini.</string>
+    <string name="staff_history_meta_done">%1$s · Selesai %2$s · %3$d mnt</string>
+    <string name="staff_history_meta_cancelled">%1$s · Dibatalkan %2$s</string>
+    <string name="staff_history_status_done">SELESAI</string>
+    <string name="staff_history_status_cancelled">DIBATALKAN</string>
+    <string name="staff_history_see_detail">Lihat rincian</string>
 </resources>
