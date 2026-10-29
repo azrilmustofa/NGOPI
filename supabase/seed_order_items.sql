@@ -1,15 +1,11 @@
 -- ==============================================================================
--- 1. Berikan Izin Akses Baca/Tulis Tabel Order & Item
+-- 1. Pastikan Policy Publik Terbuka Dicabut
 -- ==============================================================================
 alter table public.order_item enable row level security;
 drop policy if exists "admin_order_item_all" on public.order_item;
-create policy "admin_order_item_all" on public.order_item
-  for all to public using (true) with check (true);
 
 alter table public.order_item_option enable row level security;
 drop policy if exists "admin_order_item_option_all" on public.order_item_option;
-create policy "admin_order_item_option_all" on public.order_item_option
-  for all to public using (true) with check (true);
 
 -- ==============================================================================
 -- 2. Isi Data Rincian Item Dummy untuk Order yang Sudah Ada
