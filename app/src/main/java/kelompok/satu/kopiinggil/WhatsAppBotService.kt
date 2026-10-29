@@ -26,13 +26,13 @@ object WhatsAppBotService {
     }
 
     // Kandidat endpoint WAHA:
-    // 127.0.0.1:3000 (HP fisik via USB: adb reverse tcp:3000 tcp:3000)
+    // 127.0.0.1:3000 (HP fisik via USB kabel: adb reverse tcp:3000 tcp:3000)
+    // 192.168.0.117:3000 (IP host Mac saat ini di Wi-Fi)
     // 10.0.2.2:3000 (Emulator Android default)
-    // 192.168.0.117:3000 (IP host di jaringan Wi-Fi lokal)
     private val CANDIDATE_URLS = listOf(
         "http://127.0.0.1:3000",
-        "http://10.0.2.2:3000",
         "http://192.168.0.117:3000",
+        "http://10.0.2.2:3000",
     )
 
     @Volatile
