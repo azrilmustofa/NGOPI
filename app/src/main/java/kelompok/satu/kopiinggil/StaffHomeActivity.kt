@@ -66,6 +66,7 @@ class StaffHomeActivity : AppCompatActivity() {
                     try {
                         supabase.auth.signOut(SignOutScope.LOCAL)
                     } catch (_: Exception) {}
+                    setRememberMe(false)
                     startActivity(
                         Intent(this@StaffHomeActivity, LoginActivity::class.java)
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)

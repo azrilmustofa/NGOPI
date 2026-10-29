@@ -122,16 +122,7 @@ class LoginActivity : AppCompatActivity() {
             val staff = staffList.first()
             android.util.Log.d("LoginActivity", "Found staff: name=${staff.name}, role=${staff.role}, isActive=${staff.isActive}")
 
-            if (staff.isActive) {
-                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                    android.widget.Toast.makeText(
-                        this@LoginActivity,
-                        getString(R.string.staff_welcome, staff.name),
-                        android.widget.Toast.LENGTH_SHORT
-                    ).show()
-                }
-                openStaffDashboardAndClearStack()
-            } else {
+            if (!staff.isActive) {
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                     android.widget.Toast.makeText(
                         this@LoginActivity,
@@ -140,6 +131,43 @@ class LoginActivity : AppCompatActivity() {
                     ).show()
                 }
                 openMainAndClearStack()
+                return
+            }
+
+            when (staff.role.trim().uppercase()) {
+                "BARISTA", "KITCHEN" -> {
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        android.widget.Toast.makeText(
+                            this@LoginActivity,
+                            getString(R.string.staff_welcome, staff.name),
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                    openStaffDashboardAndClearStack()
+                }
+                "KASIR", "CASHIER" -> {
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        android.widget.Toast.makeText(
+                            this@LoginActivity,
+                            "Masuk sebagai Kasir: ${staff.name} (Modul Kasir sedang disiapkan)",
+                            android.widget.Toast.LENGTH_LONG
+                        ).show()
+                    }
+                    openMainAndClearStack()
+                }
+                "ADMIN", "OWNER" -> {
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        android.widget.Toast.makeText(
+                            this@LoginActivity,
+                            "Akun Admin: gunakan Web Admin untuk kelola kafe",
+                            android.widget.Toast.LENGTH_LONG
+                        ).show()
+                    }
+                    openMainAndClearStack()
+                }
+                else -> {
+                    openMainAndClearStack()
+                }
             }
         } catch (e: Exception) {
             android.util.Log.e("LoginActivity", "Error query staff_user", e)
