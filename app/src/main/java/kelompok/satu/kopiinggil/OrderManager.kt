@@ -101,6 +101,17 @@ private data class RefundOrderParams(
 )
 
 @Serializable
+private data class CashierPaymentCheckParams(@SerialName("order_id") val orderId: String)
+
+@Serializable
+data class CashierPaymentCheck(
+    @SerialName("order_status") val orderStatus: String,
+    @SerialName("payment_status") val paymentStatus: String,
+    @SerialName("payment_method") val paymentMethod: String? = null,
+    @SerialName("provider_order_id") val providerOrderId: String,
+)
+
+@Serializable
 private data class ItemParam(
     @SerialName("menu_item_id") val menuItemId: String,
     val quantity: Int,
@@ -116,6 +127,8 @@ private data class CreatePaymentParams(
     // Nama & WA tidak dikirim: server mengambilnya dari akun yang login dan menyimpannya di private_customer.
     @SerialName("consent_wa") val consentWa: Boolean,
     @SerialName("consent_promo") val consentPromo: Boolean,
+    @SerialName("assisted_customer_name") val assistedCustomerName: String? = null,
+    @SerialName("assisted_customer_phone") val assistedCustomerPhone: String? = null,
 )
 
 @Serializable
@@ -287,7 +300,11 @@ object OrderManager {
     // Membuat pesanan + transaksi Midtrans Snap (Edge Function create-payment). Pembayaran BELUM lunas di sini:
     // status lunas hanya ditentukan webhook di server. checkoutKey menjaga agar coba ulang tidak membuat pesanan ganda
     // (kunci yang sama mengembalikan transaksi dan redirect_url yang sama).
-    suspend fun createPayment(checkoutKey: String, consentPromo: Boolean): PendingPayment {
+    suspend fun createPayment(
+        checkoutKey: String,
+        consentPromo: Boolean,
+        assistedCustomer: AssistedCustomer? = null,
+    ): PendingPayment {
         val items = CartManager.items.map { it.copy() }
         val body = json.encodeToString(
             CreatePaymentParams(
@@ -298,6 +315,8 @@ object OrderManager {
                 },
                 consentWa = true,
                 consentPromo = consentPromo,
+                assistedCustomerName = assistedCustomer?.name,
+                assistedCustomerPhone = assistedCustomer?.phoneDigits,
             )
         )
         val raw = callFunction("create-payment", body)
@@ -370,6 +389,15 @@ object OrderManager {
         } catch (e: SerializationException) {
             android.util.Log.e("OrderManager", "Respons refund-order tidak sesuai: $raw", e)
             throw PaymentException("Respons server refund tidak sesuai")
+        }
+    }
+
+    suspend fun checkPaymentStatusAsCashier(orderId: String): CashierPaymentCheck {
+        val raw = callFunction("check-payment-status", json.encodeToString(CashierPaymentCheckParams(orderId)))
+        return try {
+            json.decodeFromString(raw)
+        } catch (e: SerializationException) {
+            throw PaymentException("Respons pemeriksaan pembayaran tidak sesuai")
         }
     }
 

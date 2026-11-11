@@ -157,6 +157,33 @@
                         android:textSize="13sp" />
                 </LinearLayout>
 
+                <LinearLayout
+                    android:id="@+id/rowTxRefund"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Refund"
+                        android:textColor="@color/ngopi_muted"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/tvTxRefundSummary"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="end"
+                        android:textColor="@color/ngopi_ink"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        tools:text="Selesai · REF-1234" />
+                </LinearLayout>
+
                 <!-- Status -->
                 <LinearLayout
                     android:layout_width="match_parent"

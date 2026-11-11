@@ -94,7 +94,8 @@
     <string name="invalid_notice_detail">Scan ulang QR yang tersedia di meja. Jika kode masih gagal, panggil Kasir untuk membantu.</string>
     <string name="invalid_rescan">Scan ulang QR</string>
     <string name="invalid_call_cashier">Panggil Kasir</string>
-    <string name="invalid_call_cashier_todo">Panggil Kasir belum tersedia di aplikasi. Silakan datangi kasir atau panggil barista terdekat.</string>
+    <string name="invalid_cashier_called">Kasir sudah dipanggil</string>
+    <string name="invalid_cashier_called_detail">Permintaan bantuan dikirim untuk %1$s. Harap tunggu sebentar.</string>
     <string name="menu_table_badge">Meja %1$02d</string>
     <string name="menu_title">Mau ngopi apa?</string>
     <string name="menu_description">Pesan dari meja, bayar tanpa antre. Kami siapkan setelah pembayaran terverifikasi.</string>
@@ -306,6 +307,7 @@
     <string name="chpw_error_session">Sesi login tidak ditemukan, silakan login ulang</string>
 
     <string name="checkout_from_account">DARI AKUN</string>
+    <string name="checkout_assisted_by_cashier">DIBANTU KASIR</string>
     <string name="checkout_account_hint">Data ini diambil dari akunmu. Untuk mengubahnya, buka tab Profil.</string>
     <string name="checkout_phone_empty">Belum diisi · lengkapi di Profil</string>
     <string name="checkout_profile_incomplete">Nama dan nomor WhatsApp di akunmu belum lengkap. Lengkapi dulu di tab Profil.</string>
@@ -395,4 +397,5 @@
     <string name="err_receipt_load_failed">Gagal memuat struk. Pastikan pesanan sudah lunas dan Anda masuk sebagai kasir atau admin.</string>
     <string name="err_receipt_send_failed">Struk belum dapat dikirim. Muat ulang untuk memeriksa status pesanan dan koneksi.</string>
     <string name="err_help_failed">Permintaan bantuan belum dapat dikirim. Periksa koneksi lalu coba lagi.</string>
+    <string name="err_payment_check_failed">Status pembayaran belum dapat diperiksa. Coba lagi sebentar.</string>
 </resources>

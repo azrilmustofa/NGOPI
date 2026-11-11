@@ -23,6 +23,8 @@ import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 class MainActivity : AppCompatActivity() {
     private lateinit var tvTableNumber: TextView
@@ -54,7 +56,8 @@ class MainActivity : AppCompatActivity() {
             if (isFinishing) return@launch
             if (table == null || !table.isActive) {
                 if (!supportFragmentManager.isStateSaved) {
-                    InvalidQrFragment().show(supportFragmentManager, InvalidQrFragment.TAG)
+                    InvalidQrFragment.newInstance(content)
+                        .show(supportFragmentManager, InvalidQrFragment.TAG)
                 }
             } else {
                 tableNumber = table.tableNumber
@@ -134,41 +137,10 @@ class MainActivity : AppCompatActivity() {
 
     // null = QR tidak cocok dengan meja mana pun (layar QR tidak berlaku). Error koneksi/server dilempar ke pemanggil.
     private suspend fun validateTableWithSupabase(content: String): CafeTable? {
-        val text = content.trim().uppercase()
-        val digits = Regex("\\d+").find(text)?.value?.toIntOrNull()
-        val searchId = if (text.startsWith("TBL-")) text else {
-            digits?.let { "TBL-%02d".format(it) } ?: text
-        }
-
-        android.util.Log.d("MainActivity", "Scanning QR raw: '$content' -> Search ID: '$searchId'")
-
-        // Fetch seluruh data dari tabel cafe_table
-        val allTables = supabase.postgrest["cafe_table"]
-            .select()
-            .decodeList<CafeTable>()
-
-        android.util.Log.d("MainActivity", "Total meja didapatkan dari Supabase: ${allTables.size}")
-
-        // 0 data biasanya berarti RLS memblokir baca cafe_table: itu masalah konfigurasi, bukan QR yang salah.
-        if (allTables.isEmpty()) {
-            error("cafe_table kosong: cek RLS / policy SELECT di Supabase")
-        }
-
-        // Pencocokan ID fleksibel
-        val matchedTable = allTables.firstOrNull { table ->
-            table.id.equals(searchId, ignoreCase = true) ||
-                table.id.equals(text, ignoreCase = true) ||
-                table.label.equals(content.trim(), ignoreCase = true) ||
-                (digits != null && table.tableNumber == digits)
-        }
-
-        if (matchedTable == null) {
-            android.util.Log.d("MainActivity", "QR '$searchId' tidak cocok dengan meja mana pun")
-            return null
-        }
-
-        android.util.Log.d("MainActivity", "Meja ditemukan dari Supabase: id=${matchedTable.id}, label=${matchedTable.label}, isActive=${matchedTable.isActive}")
-        return matchedTable
+        return supabase.postgrest.rpc(
+            "resolve_table_qr",
+            buildJsonObject { put("p_code", content.trim()) },
+        ).decodeList<CafeTable>().singleOrNull()
     }
 
     private companion object {

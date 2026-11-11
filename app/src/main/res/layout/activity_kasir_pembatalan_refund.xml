@@ -135,6 +135,7 @@
                     android:background="@drawable/bg_input_default"
                     android:hint="Contoh: pelanggan salah memilih meja"
                     android:inputType="text"
+                    android:maxLength="255"
                     android:paddingStart="12dp"
                     android:paddingEnd="12dp"
                     android:textColor="@color/ngopi_ink"

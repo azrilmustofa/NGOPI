@@ -31,6 +31,8 @@ class CheckoutActivity : AppCompatActivity() {
     // Data akun yang dipakai untuk struk & bantuan.
     private var customerName = ""
     private var customerPhone = ""
+    private val assistedCustomer: AssistedCustomer?
+        get() = AssistedOrderSession.forTable(CartManager.tableId)
 
     // Satu kunci per percobaan: tap ganda atau membuka lagi pop-up memakai transaksi yang sama.
     // Diganti baru kalau transaksi gagal/kedaluwarsa, karena transaksi lamanya tidak bisa dipakai lagi.
@@ -59,17 +61,27 @@ class CheckoutActivity : AppCompatActivity() {
         val cbConsentWa = findViewById<MaterialCheckBox>(R.id.cbConsentWa)
         val cbConsentPromo = findViewById<MaterialCheckBox>(R.id.cbConsentPromo)
 
-        // 1. Tampil langsung dari sesi login, 2. lalu segarkan dari server supaya data profil terbaru.
-        bindAccount(supabase.auth.currentUserOrNull())
-        lifecycleScope.launch {
-            try {
-                bindAccount(supabase.auth.retrieveUserForCurrentSession(updateSession = true))
-            } catch (_: Exception) {
-                // Pakai data sesi yang sudah tampil.
+        val assisted = assistedCustomer
+        if (assisted != null) {
+            customerName = assisted.name
+            customerPhone = assisted.phoneDigits
+            tvName.text = customerName
+            tvPhone.text = customerPhone
+            findViewById<TextView>(R.id.tvCheckoutCustomerSource).setText(R.string.checkout_assisted_by_cashier)
+        } else {
+            // 1. Tampil langsung dari sesi login, 2. lalu segarkan dari server supaya data profil terbaru.
+            bindAccount(supabase.auth.currentUserOrNull())
+            lifecycleScope.launch {
+                try {
+                    bindAccount(supabase.auth.retrieveUserForCurrentSession(updateSession = true))
+                } catch (_: Exception) {
+                    // Pakai data sesi yang sudah tampil.
+                }
             }
         }
 
         findViewById<View>(R.id.btnBack).setOnClickListener { finish() }
+        findViewById<View>(R.id.btnPendingHelp).setOnClickListener { openPaymentHelp() }
         btnPay.setOnClickListener {
             if (customerName.isBlank() || customerPhone.isBlank()) {
                 Toast.makeText(this, R.string.checkout_profile_incomplete, Toast.LENGTH_LONG).show()
@@ -200,7 +212,7 @@ class CheckoutActivity : AppCompatActivity() {
         btnPay.isEnabled = false
         lifecycleScope.launch {
             try {
-                openSheet(OrderManager.createPayment(checkoutKey, consentPromo).redirectUrl)
+                openSheet(OrderManager.createPayment(checkoutKey, consentPromo, assistedCustomer).redirectUrl)
             } catch (e: Exception) {
                 android.util.Log.e("Checkout", "Gagal membuat pembayaran", e)
                 Toast.makeText(this@CheckoutActivity, e.toUserMessage(this@CheckoutActivity, R.string.err_payment_create_failed), Toast.LENGTH_LONG).show()
@@ -248,6 +260,12 @@ class CheckoutActivity : AppCompatActivity() {
     }
 
     private fun openStatus() {
+        if (assistedCustomer != null) {
+            AssistedOrderSession.clear()
+            Toast.makeText(this, "Pesanan bantuan berhasil dibayar dan masuk antrean barista", Toast.LENGTH_LONG).show()
+            openKasirDashboardAndClearStack()
+            return
+        }
         startActivity(Intent(this, StatusPesananActivity::class.java).apply {
             putExtra("EXTRA_CUSTOMER_PHONE", customerPhone)
             putExtra("EXTRA_CUSTOMER_NAME", customerName)
@@ -268,6 +286,7 @@ class CheckoutActivity : AppCompatActivity() {
                         .setTitle(R.string.pay_failed_title)
                         .setMessage(R.string.pay_failed_message)
                         .setPositiveButton(R.string.pay_failed_retry) { _, _ -> continuePayment(retry = true) }
+                        .setNeutralButton(R.string.failed_btn_help) { _, _ -> openPaymentHelp() }
                         .setNegativeButton(R.string.pay_failed_later, null)
                         .show()
                 }
@@ -275,6 +294,15 @@ class CheckoutActivity : AppCompatActivity() {
                 PaymentState.PENDING -> renderPending()
             }
         }.show()
+    }
+
+    private fun openPaymentHelp() {
+        startActivity(Intent(this, BantuanActivity::class.java).apply {
+            putExtra(BantuanActivity.EXTRA_TABLE_ID, CartManager.tableId)
+            OrderManager.pendingPayment?.publicId?.let {
+                putExtra(BantuanActivity.EXTRA_ORDER_PUBLIC_ID, it)
+            }
+        })
     }
 
     // Ada transaksi yang belum selesai: tampilkan penanda dan ubah tombol jadi "Lanjutkan pembayaran".

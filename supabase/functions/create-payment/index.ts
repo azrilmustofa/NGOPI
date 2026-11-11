@@ -26,7 +26,15 @@ const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: 
 
 type ItemInput = { menu_item_id: string; quantity: number; note?: string; option_ids?: string[] };
 // Persetujuan dari Checkout. Nama & WA tidak dikirim app: diambil dari akun yang login (customerFromAccount).
-type Body = { table_id: string; checkout_key: string; items: ItemInput[]; consent_wa: boolean; consent_promo?: boolean };
+type Body = {
+  table_id: string;
+  checkout_key: string;
+  items: ItemInput[];
+  consent_wa: boolean;
+  consent_promo?: boolean;
+  assisted_customer_name?: string | null;
+  assisted_customer_phone?: string | null;
+};
 
 // Versi teks persetujuan di Checkout; naikkan kalau kalimat persetujuannya diubah.
 const CONSENT_VERSION = "checkout-wa-v1";
@@ -77,6 +85,19 @@ function customerFromAccount(user: AuthUser): { name: string; phoneE164: string 
   return { name, phoneE164: "+62" + digits };
 }
 
+function assistedCustomer(body: Body): { name: string; phoneE164: string } | null {
+  const requested = body.assisted_customer_name != null || body.assisted_customer_phone != null;
+  if (!requested) return null;
+  if (typeof body.assisted_customer_name !== "string" || typeof body.assisted_customer_phone !== "string") {
+    throw new HttpError(400, "Nama dan nomor WhatsApp pelanggan wajib diisi");
+  }
+  const name = body.assisted_customer_name.trim().slice(0, 100);
+  const digits = body.assisted_customer_phone.replace(/\D/g, "").replace(/^62/, "").replace(/^0+/, "");
+  if (name.length < 2) throw new HttpError(400, "Nama pelanggan belum valid");
+  if (!/^\d{8,13}$/.test(digits)) throw new HttpError(400, "Nomor WhatsApp pelanggan belum valid");
+  return { name, phoneE164: "+62" + digits };
+}
+
 function parseBody(raw: any): Body {
   const bad = () => new HttpError(400, "Data pesanan tidak valid");
   if (
@@ -91,6 +112,8 @@ function parseBody(raw: any): Body {
   }
   if (raw.consent_wa !== true) throw new HttpError(400, "Persetujuan pesan WhatsApp diperlukan");
   if (raw.consent_promo != null && typeof raw.consent_promo !== "boolean") throw bad();
+  if (raw.assisted_customer_name != null && typeof raw.assisted_customer_name !== "string") throw bad();
+  if (raw.assisted_customer_phone != null && typeof raw.assisted_customer_phone !== "string") throw bad();
   return raw as Body;
 }
 
@@ -162,8 +185,14 @@ async function handle(req: Request) {
   const again = await existingResponse(uid, body.checkout_key);
   if (again) return again;
 
-  // Dicek sebelum pesanan dibuat: akun tanpa nama/WA ditolak dengan pesan untuk melengkapi Profil.
-  const customer = customerFromAccount(user);
+  const assisted = assistedCustomer(body);
+  if (assisted) {
+    const staff = await admin.from("staff_user").select("uid, role, name")
+      .eq("uid", uid).eq("is_active", true).in("role", ["CASHIER", "ADMIN", "OWNER"]).maybeSingle();
+    if (staff.error || !staff.data) throw new HttpError(403, "Hanya kasir aktif yang dapat membantu membuat pesanan");
+  }
+  // Pesanan biasa memakai profil akun; pesanan bantuan memakai kontak pelanggan yang dikonfirmasi kasir.
+  const customer = assisted ?? customerFromAccount(user);
 
   // --- meja ---
   const tableRes = await admin.from("cafe_table").select("id").eq("id", body.table_id).eq("is_active", true).maybeSingle();
@@ -357,11 +386,23 @@ async function handle(req: Request) {
     const hist = await admin.from("order_status_history").insert({
       order_id: orderId,
       actor_uid: uid,
-      actor_type: "CUSTOMER",
+      actor_type: assisted ? "STAFF" : "CUSTOMER",
       to_status: "AWAITING_PAYMENT",
-      note: "Pesanan dibuat",
+      note: assisted ? "Pesanan dibuat dengan bantuan kasir" : "Pesanan dibuat",
     });
     if (hist.error) console.error("order_status_history", hist.error);
+
+    if (assisted) {
+      const audit = await admin.from("audit_log").insert({
+        actor_uid: uid,
+        action: "ASSISTED_ORDER_CREATED",
+        target_type: "customer_order",
+        target_id: orderId,
+        reason: "Kasir membantu pelanggan membuat pesanan",
+        changes_summary: { public_id: publicId, table_id: body.table_id, customer_name: assisted.name },
+      });
+      if (audit.error) console.error("audit assisted order", audit.error);
+    }
 
     // --- payment_attempt + Snap ---
     // order_id Midtrans harus unik per percobaan, jadi dibuat dari public_id + akhiran acak.

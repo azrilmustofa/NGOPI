@@ -90,15 +90,37 @@
                     android:src="@drawable/ic_clock"
                     app:tint="@color/ngopi_primary" />
 
-                <TextView
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
                     android:layout_weight="1"
-                    android:lineSpacingMultiplier="1.1"
-                    android:text="@string/checkout_pending_note"
-                    android:textColor="@color/ngopi_ink"
-                    android:textSize="12sp" />
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:lineSpacingMultiplier="1.1"
+                        android:text="@string/checkout_pending_note"
+                        android:textColor="@color/ngopi_ink"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/btnPendingHelp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:paddingTop="4dp"
+                        android:paddingEnd="8dp"
+                        android:paddingBottom="4dp"
+                        android:text="@string/verif_btn_help"
+                        android:textColor="@color/ngopi_primary"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
             </LinearLayout>
 
             <!-- Server Quote Card -->
@@ -273,6 +295,7 @@
                             app:tint="@color/ngopi_primary" />
 
                         <TextView
+                            android:id="@+id/tvCheckoutCustomerSource"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="4dp"

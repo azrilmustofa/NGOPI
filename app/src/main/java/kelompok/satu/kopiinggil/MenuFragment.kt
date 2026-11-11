@@ -40,6 +40,12 @@ class MenuFragment : Fragment(R.layout.fragment_menu) {
         val table = requireArguments().getInt(ARG_TABLE, 0)
         view.findViewById<TextView>(R.id.tvTableBadge).text =
             if (table > 0) getString(R.string.menu_table_badge, table) else getString(R.string.table_placeholder)
+        if (AssistedOrderSession.forTable(CartManager.tableId) != null) {
+            view.findViewById<TextView>(R.id.tvMenuEyebrow).text = "KASIR / PILIH MENU"
+            view.findViewById<TextView>(R.id.tvMenuTitle).text = "Pilih pesanan pelanggan"
+            view.findViewById<TextView>(R.id.tvMenuDescription).text =
+                "Tambahkan menu dan opsi sesuai permintaan pelanggan."
+        }
 
         // Tombol + membuka popup yang sama dengan mengetuk menu, supaya pilihan wajib (mis. susu) selalu terisi.
         adapter = BarangAdapter(requireContext()) { barang -> DetailMenuSheet(this, barang).show() }

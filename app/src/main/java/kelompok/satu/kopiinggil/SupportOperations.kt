@@ -29,6 +29,7 @@ data class SupportRequest(
 )
 
 fun SupportRequest.topicTitle(): String = when (topic) {
+    "QR" -> "Masalah QR meja"
     "PAYMENT" -> "Bantuan pembayaran"
     "ORDER" -> "Pesanan atau alergi"
     "RECEIPT" -> "Nomor WhatsApp atau struk"
@@ -41,6 +42,11 @@ suspend fun requestSupport(topic: String, tableId: String, orderPublicId: String
         put("p_table_id", tableId)
         if (orderPublicId == null) put("p_order_public_id", JsonNull)
         else put("p_order_public_id", orderPublicId.trimStart('#'))
+    }).decodeAs()
+
+suspend fun requestInvalidQrSupport(qrCode: String): SupportRequest =
+    supabase.postgrest.rpc("request_invalid_qr_support", buildJsonObject {
+        put("p_code", qrCode.trim().take(500))
     }).decodeAs()
 
 suspend fun loadMySupportRequest(tableId: String): SupportRequest? =

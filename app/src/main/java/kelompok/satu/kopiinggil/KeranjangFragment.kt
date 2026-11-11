@@ -30,6 +30,13 @@ class KeranjangFragment : Fragment(R.layout.fragment_keranjang) {
         tvSubtotal = view.findViewById(R.id.tvSubtotal)
         tvBottomSubtotal = view.findViewById(R.id.tvBottomSubtotal)
 
+        if (AssistedOrderSession.forTable(CartManager.tableId) != null) {
+            view.findViewById<TextView>(R.id.tvCartEyebrow).text = "KASIR / TINJAU PESANAN"
+            view.findViewById<TextView>(R.id.tvCartTitle).text = "Pesanan pelanggan"
+            view.findViewById<TextView>(R.id.tvCartSubtitle).text =
+                "Periksa menu dan jumlah sebelum melanjutkan ke pembayaran."
+        }
+
         val goToMenu = View.OnClickListener { (activity as? HomeActivity)?.selectMenuTab() }
         view.findViewById<View>(R.id.btnGoToMenu).setOnClickListener(goToMenu)
         view.findViewById<View>(R.id.btnAddMore).setOnClickListener(goToMenu)

@@ -1,6 +1,8 @@
 package kelompok.satu.kopiinggil
 
 import android.os.Bundle
+import android.view.View
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -14,12 +16,17 @@ class HomeActivity : AppCompatActivity() {
         applyEdgeToEdge(R.id.main)
 
         val table = intent.getIntExtra(EXTRA_TABLE, 0)
+        val assistedMode = intent.getBooleanExtra(EXTRA_ASSISTED_ORDER, false)
         CartManager.restore(
             this,
             tableNumber = table,
             tableId = intent.getStringExtra(EXTRA_TABLE_ID).orEmpty(),
             ownerUid = supabase.auth.currentUserOrNull()?.id.orEmpty(),
         )
+        if (savedInstanceState == null && assistedMode) {
+            // Pesanan bantuan selalu dimulai dari keranjang kosong agar tidak membawa item kasir sebelumnya.
+            CartManager.clear()
+        }
 
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
@@ -32,7 +39,20 @@ class HomeActivity : AppCompatActivity() {
             showTab(TAG_MENU)
         }
 
-        findViewById<BottomNavigationView>(R.id.bottomNav).setOnItemSelectedListener { item ->
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNav)
+        if (assistedMode) {
+            findViewById<View>(R.id.assistedCashierHeader).visibility = View.VISIBLE
+            findViewById<View>(R.id.btnExitAssistedOrder).setOnClickListener { finish() }
+            val customer = AssistedOrderSession.forTable(CartManager.tableId)
+            findViewById<TextView>(R.id.tvAssistedOrderContext).text =
+                "${customer?.name ?: "Pelanggan"} · Meja %02d".format(table)
+            bottomNav.menu.findItem(R.id.nav_menu).title = "Menu Kasir"
+            bottomNav.menu.findItem(R.id.nav_cart).title = "Pesanan"
+            bottomNav.menu.findItem(R.id.nav_orders).isVisible = false
+            bottomNav.menu.findItem(R.id.nav_profile).isVisible = false
+        }
+
+        bottomNav.setOnItemSelectedListener { item ->
             val tag = when (item.itemId) {
                 R.id.nav_menu -> TAG_MENU
                 R.id.nav_cart -> TAG_KERANJANG
@@ -55,6 +75,13 @@ class HomeActivity : AppCompatActivity() {
             pendingTab = null
             findViewById<BottomNavigationView>(R.id.bottomNav).selectedItemId = it
         }
+    }
+
+    override fun onDestroy() {
+        if (isFinishing && intent.getBooleanExtra(EXTRA_ASSISTED_ORDER, false)) {
+            AssistedOrderSession.clear()
+        }
+        super.onDestroy()
     }
 
     fun selectMenuTab() {
@@ -94,6 +121,7 @@ class HomeActivity : AppCompatActivity() {
 
         const val EXTRA_TABLE = "extra_table"
         const val EXTRA_TABLE_ID = "extra_table_id"
+        const val EXTRA_ASSISTED_ORDER = "extra_assisted_order"
         private const val TAG_MENU = "tab_menu"
         private const val TAG_KERANJANG = "tab_keranjang"
         private const val TAG_PESANAN = "tab_pesanan"

@@ -55,10 +55,10 @@ class KasirPembatalanRefundActivity : AppCompatActivity() {
 
         btnConfirmCancel.setOnClickListener {
             val reason = etReason.text.toString().trim()
-            if (reason.isBlank()) {
-                etReason.error = "Alasan pembatalan wajib diisi"
+            if (reason.length !in 3..255) {
+                etReason.error = "Alasan wajib berisi 3–255 karakter"
                 etReason.requestFocus()
-                Toast.makeText(this, "Silakan isi alasan pembatalan", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Isi alasan pembatalan minimal 3 karakter", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             showConfirmationDialog(reason)
@@ -122,9 +122,9 @@ class KasirPembatalanRefundActivity : AppCompatActivity() {
                     Toast.LENGTH_LONG,
                 ).show()
             } catch (e: Exception) {
-                currentStatus = "CANCELLED"
                 val saved = runCatching { loadOrderRefund(orderId) }.getOrNull()
                 if (saved != null) {
+                    currentStatus = saved.orderStatus
                     renderRefund(saved)
                     setResult(RESULT_OK)
                     Toast.makeText(

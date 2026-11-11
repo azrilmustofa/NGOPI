@@ -71,6 +71,8 @@ class KasirTransaksiVerifikasiActivity : AppCompatActivity() {
     private lateinit var tvNominal: TextView
     private lateinit var tvMetode: TextView
     private lateinit var tvProviderId: TextView
+    private lateinit var rowRefund: View
+    private lateinit var tvRefundSummary: TextView
     private lateinit var tvStatusBadge: TextView
     private lateinit var llTimelineContainer: LinearLayout
     private lateinit var btnCheckMidtrans: AppCompatButton
@@ -103,6 +105,8 @@ class KasirTransaksiVerifikasiActivity : AppCompatActivity() {
         tvNominal = findViewById(R.id.tvTxNominal)
         tvMetode = findViewById(R.id.tvTxMetode)
         tvProviderId = findViewById(R.id.tvTxProviderId)
+        rowRefund = findViewById(R.id.rowTxRefund)
+        tvRefundSummary = findViewById(R.id.tvTxRefundSummary)
         tvStatusBadge = findViewById(R.id.tvTxStatusBadge)
         llTimelineContainer = findViewById(R.id.llTxTimelineContainer)
         btnCheckMidtrans = findViewById(R.id.btnCheckMidtrans)
@@ -124,6 +128,11 @@ class KasirTransaksiVerifikasiActivity : AppCompatActivity() {
 
         renderStaticInfo()
         loadOrderDetails()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::rowRefund.isInitialized && orderId.isNotBlank()) loadRefundSummary()
     }
 
     private fun openCancellationScreen() {
@@ -231,6 +240,25 @@ class KasirTransaksiVerifikasiActivity : AppCompatActivity() {
         }
     }
 
+    private fun loadRefundSummary() {
+        lifecycleScope.launch {
+            val refund = runCatching { loadOrderRefund(orderId) }.getOrNull()
+            if (refund == null) {
+                rowRefund.visibility = View.GONE
+                return@launch
+            }
+            rowRefund.visibility = View.VISIBLE
+            tvRefundSummary.text = when (refund.refundStatus) {
+                "REFUNDED" -> "Selesai${refund.providerReference?.let { " · $it" }.orEmpty()}"
+                "PROCESSING", "REQUESTED" -> "Diproses Midtrans"
+                "FAILED" -> "Gagal · coba lagi"
+                "MANUAL_REQUIRED" -> "Pengembalian tunai"
+                "NOT_REQUIRED" -> "Tidak diperlukan"
+                else -> refund.refundStatus
+            }
+        }
+    }
+
     private suspend fun loadTimeline() {
         val histories = try {
             supabase.postgrest["order_status_history"].select {
@@ -286,26 +314,29 @@ class KasirTransaksiVerifikasiActivity : AppCompatActivity() {
 
     private fun checkOnlineStatus() {
         btnCheckMidtrans.isEnabled = false
-        Toast.makeText(this, "Memeriksa status ke server...", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Memeriksa langsung ke Midtrans...", Toast.LENGTH_SHORT).show()
 
         lifecycleScope.launch {
             try {
-                val order = supabase.postgrest["customer_order"].select {
-                    filter { eq("id", orderId) }
-                }.decodeList<TxDetailOrderDto>().firstOrNull()
-
-                btnCheckMidtrans.isEnabled = true
-
-                if (order != null && isPaidStatus(order.status)) {
-                    updateStatusUi(order.status)
-                    loadTimeline()
-                    Toast.makeText(this@KasirTransaksiVerifikasiActivity, "Pembayaran berhasil diverifikasi Lunas!", Toast.LENGTH_SHORT).show()
+                val result = OrderManager.checkPaymentStatusAsCashier(orderId)
+                updateStatusUi(result.orderStatus)
+                tvMetode.text = result.paymentMethod ?: "BELUM DIPILIH"
+                tvProviderId.text = result.providerOrderId
+                loadTimeline()
+                val message = if (isPaidStatus(result.orderStatus)) {
+                    "Pembayaran berhasil diverifikasi lunas"
                 } else {
-                    Toast.makeText(this@KasirTransaksiVerifikasiActivity, "Status transaksi saat ini: ${order?.status ?: currentStatus}", Toast.LENGTH_SHORT).show()
+                    "Status Midtrans: ${result.paymentStatus}"
                 }
+                Toast.makeText(this@KasirTransaksiVerifikasiActivity, message, Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
+                Toast.makeText(
+                    this@KasirTransaksiVerifikasiActivity,
+                    e.toUserMessage(this@KasirTransaksiVerifikasiActivity, R.string.err_payment_check_failed),
+                    Toast.LENGTH_LONG,
+                ).show()
+            } finally {
                 btnCheckMidtrans.isEnabled = true
-                Toast.makeText(this@KasirTransaksiVerifikasiActivity, "Gagal memeriksa: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
             }
         }
     }
