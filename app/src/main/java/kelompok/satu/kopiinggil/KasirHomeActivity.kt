@@ -1,15 +1,9 @@
 package kelompok.satu.kopiinggil
 
-import android.content.Intent
 import android.os.Bundle
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import io.github.jan.supabase.auth.SignOutScope
-import io.github.jan.supabase.auth.auth
-import kotlinx.coroutines.launch
 
 class KasirHomeActivity : AppCompatActivity() {
 
@@ -26,6 +20,7 @@ class KasirHomeActivity : AppCompatActivity() {
                 .add(R.id.kasirFragmentContainer, KasirRingkasanFragment(), TAG_BERANDA)
                 .add(R.id.kasirFragmentContainer, KasirTransaksiFragment(), TAG_TRANSAKSI)
                 .add(R.id.kasirFragmentContainer, KasirBantuanFragment(), TAG_BANTUAN)
+                .add(R.id.kasirFragmentContainer, ProfilFragment(), TAG_AKUN)
                 .commitNow()
             showTab(TAG_BERANDA)
         }
@@ -45,8 +40,8 @@ class KasirHomeActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_kasir_akun -> {
-                    showLogoutDialog()
-                    false
+                    showTab(TAG_AKUN)
+                    true
                 }
                 else -> false
             }
@@ -60,7 +55,7 @@ class KasirHomeActivity : AppCompatActivity() {
     }
 
     private fun showTab(tag: String) {
-        val tabs = listOf(TAG_BERANDA, TAG_TRANSAKSI, TAG_BANTUAN).mapNotNull<String, Fragment> {
+        val tabs = listOf(TAG_BERANDA, TAG_TRANSAKSI, TAG_BANTUAN, TAG_AKUN).mapNotNull<String, Fragment> {
             supportFragmentManager.findFragmentByTag(it)
         }
         supportFragmentManager.beginTransaction().setReorderingAllowed(true).apply {
@@ -68,29 +63,10 @@ class KasirHomeActivity : AppCompatActivity() {
         }.commit()
     }
 
-    private fun showLogoutDialog() {
-        AlertDialog.Builder(this)
-            .setTitle("Keluar Akun Kasir")
-            .setMessage("Apakah Anda yakin ingin keluar dari akun Kasir?")
-            .setPositiveButton("Keluar") { _, _ ->
-                lifecycleScope.launch {
-                    try {
-                        supabase.auth.signOut(SignOutScope.LOCAL)
-                    } catch (_: Exception) {}
-                    setRememberMe(false)
-                    startActivity(
-                        Intent(this@KasirHomeActivity, LoginActivity::class.java)
-                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                    )
-                }
-            }
-            .setNegativeButton("Batal", null)
-            .show()
-    }
-
     companion object {
         private const val TAG_BERANDA = "tag_kasir_beranda"
         private const val TAG_TRANSAKSI = "tag_kasir_transaksi"
         private const val TAG_BANTUAN = "tag_kasir_bantuan"
+        private const val TAG_AKUN = "tag_kasir_akun"
     }
 }

@@ -1,15 +1,9 @@
 package kelompok.satu.kopiinggil
 
-import android.content.Intent
 import android.os.Bundle
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import io.github.jan.supabase.auth.SignOutScope
-import io.github.jan.supabase.auth.auth
-import kotlinx.coroutines.launch
 
 class StaffHomeActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,6 +18,7 @@ class StaffHomeActivity : AppCompatActivity() {
                 .setReorderingAllowed(true)
                 .add(R.id.staffFragmentContainer, StaffAntreanFragment(), TAG_ANTREAN)
                 .add(R.id.staffFragmentContainer, StaffRiwayatFragment(), TAG_RIWAYAT)
+                .add(R.id.staffFragmentContainer, ProfilFragment(), TAG_AKUN)
                 .commitNow()
             showTab(TAG_ANTREAN)
         }
@@ -39,8 +34,8 @@ class StaffHomeActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_staff_akun -> {
-                    showLogoutDialog()
-                    false
+                    showTab(TAG_AKUN)
+                    true
                 }
                 else -> false
             }
@@ -48,7 +43,7 @@ class StaffHomeActivity : AppCompatActivity() {
     }
 
     private fun showTab(tag: String) {
-        val tabs = listOf(TAG_ANTREAN, TAG_RIWAYAT).mapNotNull<String, Fragment> {
+        val tabs = listOf(TAG_ANTREAN, TAG_RIWAYAT, TAG_AKUN).mapNotNull<String, Fragment> {
             supportFragmentManager.findFragmentByTag(it)
         }
         supportFragmentManager.beginTransaction().setReorderingAllowed(true).apply {
@@ -56,28 +51,9 @@ class StaffHomeActivity : AppCompatActivity() {
         }.commit()
     }
 
-    private fun showLogoutDialog() {
-        AlertDialog.Builder(this)
-            .setTitle("Keluar Akun Staff")
-            .setMessage("Apakah Anda yakin ingin keluar dari akun Barista?")
-            .setPositiveButton("Keluar") { _, _ ->
-                lifecycleScope.launch {
-                    try {
-                        supabase.auth.signOut(SignOutScope.LOCAL)
-                    } catch (_: Exception) {}
-                    setRememberMe(false)
-                    startActivity(
-                        Intent(this@StaffHomeActivity, LoginActivity::class.java)
-                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                    )
-                }
-            }
-            .setNegativeButton("Batal", null)
-            .show()
-    }
-
     companion object {
         private const val TAG_ANTREAN = "tag_staff_antrean"
         private const val TAG_RIWAYAT = "tag_staff_riwayat"
+        private const val TAG_AKUN = "tag_staff_akun"
     }
 }

@@ -13,7 +13,9 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
@@ -33,6 +35,9 @@ class ProfilFragment : Fragment(R.layout.fragment_profil) {
     private var editingName = false
     private var editingPhone = false
 
+    private val isStaffProfile: Boolean
+        get() = activity is StaffHomeActivity || activity is KasirHomeActivity
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -44,6 +49,12 @@ class ProfilFragment : Fragment(R.layout.fragment_profil) {
         btnSave = view.findViewById(R.id.btnSaveProfile)
         btnLogout = view.findViewById(R.id.btnLogout)
         llEditActions = view.findViewById(R.id.llEditActions)
+
+        if (isStaffProfile) {
+            listOf(R.id.layoutFieldPhone, R.id.rowHelpCenter, R.id.rowTerms).forEach { id ->
+                view.findViewById<View>(id).visibility = View.GONE
+            }
+        }
 
         etEmail.setEditable(false)
         bindUser()
@@ -62,7 +73,9 @@ class ProfilFragment : Fragment(R.layout.fragment_profil) {
         }
 
         view.findViewById<View>(R.id.rowHelpCenter).setOnClickListener {
-            Toast.makeText(requireContext(), R.string.profile_help_info, Toast.LENGTH_LONG).show()
+            startActivity(Intent(requireContext(), BantuanActivity::class.java).apply {
+                putExtra(BantuanActivity.EXTRA_TABLE_ID, CartManager.tableId)
+            })
         }
 
         view.findViewById<View>(R.id.rowTerms).setOnClickListener {
@@ -100,10 +113,9 @@ class ProfilFragment : Fragment(R.layout.fragment_profil) {
         val email = user?.email.orEmpty()
         val metadata = user?.userMetadata
 
-        val fullName = metadata?.get("full_name")?.jsonPrimitive?.content
         val phone = metadata?.get("phone")?.jsonPrimitive?.content
 
-        val name = if (!fullName.isNullOrBlank()) fullName else email.substringBefore("@")
+        val name = profileDisplayName(metadata, email)
         etName.setText(name)
         etPhone.setText(phone.orEmpty().cleanPhone())
         etEmail.setText(email)
@@ -124,8 +136,7 @@ class ProfilFragment : Fragment(R.layout.fragment_profil) {
     private fun cancelEdit(name: Boolean = false, phone: Boolean = false) {
         val metadata = supabase.auth.currentUserOrNull()?.userMetadata
         if (name) {
-            val saved = metadata?.get("full_name")?.jsonPrimitive?.content
-                ?: supabase.auth.currentUserOrNull()?.email.orEmpty().substringBefore("@")
+            val saved = profileDisplayName(metadata, supabase.auth.currentUserOrNull()?.email.orEmpty())
             etName.setText(saved)
         }
         if (phone) etPhone.setText(metadata?.get("phone")?.jsonPrimitive?.content.orEmpty().cleanPhone())
@@ -158,7 +169,7 @@ class ProfilFragment : Fragment(R.layout.fragment_profil) {
             etName.error = getString(R.string.profile_error_name)
             valid = false
         }
-        if (phone.isNotEmpty() && !phone.isValidPhone()) {
+        if (!isStaffProfile && phone.isNotEmpty() && !phone.isValidPhone()) {
             etPhone.error = getString(R.string.profile_error_phone)
             valid = false
         }
@@ -170,7 +181,7 @@ class ProfilFragment : Fragment(R.layout.fragment_profil) {
                 supabase.auth.updateUser {
                     data = buildJsonObject {
                         put("full_name", name)
-                        put("phone", phone)
+                        if (!isStaffProfile) put("phone", phone)
                     }
                 }
                 hideKeyboard()
@@ -215,3 +226,8 @@ class ProfilFragment : Fragment(R.layout.fragment_profil) {
         if (!editable) error = null
     }
 }
+
+internal fun profileDisplayName(metadata: JsonObject?, email: String): String =
+    metadata?.get("full_name")?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
+        ?: metadata?.get("name")?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
+        ?: email.substringBefore("@")

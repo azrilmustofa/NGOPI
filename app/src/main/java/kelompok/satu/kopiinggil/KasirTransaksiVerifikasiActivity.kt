@@ -15,14 +15,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
-import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -79,6 +76,7 @@ class KasirTransaksiVerifikasiActivity : AppCompatActivity() {
     private lateinit var btnCheckMidtrans: AppCompatButton
     private lateinit var btnConfirmCash: AppCompatButton
     private lateinit var btnCancelOrder: AppCompatButton
+    private lateinit var btnResendReceipt: AppCompatButton
 
     private val cancelLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
@@ -110,6 +108,7 @@ class KasirTransaksiVerifikasiActivity : AppCompatActivity() {
         btnCheckMidtrans = findViewById(R.id.btnCheckMidtrans)
         btnConfirmCash = findViewById(R.id.btnConfirmCash)
         btnCancelOrder = findViewById(R.id.btnCancelOrder)
+        btnResendReceipt = findViewById(R.id.btnResendOrderReceipt)
 
         findViewById<View>(R.id.btnBack).setOnClickListener { finish() }
         findViewById<View>(R.id.btnBackToTxList).setOnClickListener { finish() }
@@ -117,6 +116,11 @@ class KasirTransaksiVerifikasiActivity : AppCompatActivity() {
         btnCheckMidtrans.setOnClickListener { checkOnlineStatus() }
         btnConfirmCash.setOnClickListener { showCashConfirmationDialog() }
         btnCancelOrder.setOnClickListener { openCancellationScreen() }
+        btnResendReceipt.setOnClickListener {
+            startActivity(Intent(this, KasirStrukWaActivity::class.java).apply {
+                putExtra(KasirStrukWaActivity.EXTRA_ORDER_ID, orderId)
+            })
+        }
 
         renderStaticInfo()
         loadOrderDetails()
@@ -145,6 +149,7 @@ class KasirTransaksiVerifikasiActivity : AppCompatActivity() {
 
     private fun updateStatusUi(status: String) {
         currentStatus = status
+        btnResendReceipt.visibility = if (status in RECEIPT_STATUSES) View.VISIBLE else View.GONE
         when (status.uppercase()) {
             "PAID", "ACCEPTED", "PREPARING", "READY" -> {
                 tvTitle.text = "Pembayaran Terverifikasi"
@@ -213,9 +218,6 @@ class KasirTransaksiVerifikasiActivity : AppCompatActivity() {
 
                 if (attempt != null) {
                     tvMetode.text = attempt.paymentMethod?.uppercase() ?: "QRIS / ONLINE"
-                    if (attempt.status.equals("PAID", ignoreCase = true) && !isPaidStatus(currentStatus)) {
-                        updateStatusUi("PAID")
-                    }
                 } else {
                     tvMetode.text = "QRIS / TUNAI"
                 }
@@ -323,43 +325,15 @@ class KasirTransaksiVerifikasiActivity : AppCompatActivity() {
         btnConfirmCash.isEnabled = false
         lifecycleScope.launch {
             try {
-                val nowIso = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
-                    timeZone = TimeZone.getTimeZone("UTC")
-                }.format(Date())
-
-                // 1. Update customer_order ke PAID
-                supabase.postgrest["customer_order"].update(
-                    buildJsonObject {
-                        put("status", "PAID")
-                        put("paid_at", nowIso)
-                        put("updated_at", nowIso)
-                    }
-                ) {
-                    filter { eq("id", orderId) }
-                }
-
-                // 2. Insert ke order_status_history
-                try {
-                    val currentUser = supabase.auth.currentUserOrNull()
-                    supabase.postgrest["order_status_history"].insert(
-                        buildJsonObject {
-                            put("order_id", orderId)
-                            if (currentUser != null) put("actor_uid", currentUser.id)
-                            put("actor_type", "KASIR")
-                            put("from_status", currentStatus)
-                            put("to_status", "PAID")
-                            put("note", "Pembayaran tunai diverifikasi langsung di kasir")
-                        }
-                    )
-                } catch (_: Exception) {}
-
-                updateStatusUi("PAID")
+                val result = transitionOrder(orderId, currentStatus, "PAID", "Pembayaran tunai diverifikasi langsung di kasir")
+                updateStatusUi(result.status)
                 loadTimeline()
                 Toast.makeText(this@KasirTransaksiVerifikasiActivity, "Pembayaran tunai diterima! Pesanan masuk antrean barista.", Toast.LENGTH_LONG).show()
 
             } catch (e: Exception) {
                 btnConfirmCash.isEnabled = true
                 Toast.makeText(this@KasirTransaksiVerifikasiActivity, "Gagal konfirmasi: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                loadOrderDetails()
             }
         }
     }

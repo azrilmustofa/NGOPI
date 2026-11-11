@@ -20,51 +20,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [staffUser, setStaffUser] = useState<StaffUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadStaffProfile = async (uid: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('staff_user')
-        .select('*')
-        .eq('uid', uid)
-        .maybeSingle();
-
-      if (!error && data) {
-        setStaffUser(data as StaffUser);
-      } else {
-        setStaffUser({
-          uid,
-          name: 'Staff Kopi Inggil',
-          role: 'ADMIN',
-          is_active: true,
-        });
-      }
-    } catch {
-      setStaffUser(null);
-    }
-  };
-
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        loadStaffProfile(session.user.id);
+    let profileRequest = 0;
+    let profileTimer: ReturnType<typeof setTimeout>;
+
+    const loadStaffProfile = async (uid: string, request: number) => {
+      try {
+        const { data, error } = await supabase
+          .from('staff_user')
+          .select('*')
+          .eq('uid', uid)
+          .maybeSingle();
+
+        if (request !== profileRequest) return;
+        setStaffUser(!error && data?.uid === uid ? data as StaffUser : null);
+      } catch {
+        if (request === profileRequest) setStaffUser(null);
+      } finally {
+        if (request === profileRequest) setLoading(false);
       }
-      setLoading(false);
-    });
+    };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const request = ++profileRequest;
+      clearTimeout(profileTimer);
       setSession(session);
       setUser(session?.user ?? null);
+      setStaffUser(null);
+      setLoading(Boolean(session?.user));
       if (session?.user) {
-        loadStaffProfile(session.user.id);
-      } else {
-        setStaffUser(null);
+        // Run queries after the auth callback releases Supabase's session lock.
+        profileTimer = setTimeout(() => loadStaffProfile(session.user.id, request), 0);
       }
-      setLoading(false);
     });
 
     return () => {
+      profileRequest++;
+      clearTimeout(profileTimer);
       subscription.unsubscribe();
     };
   }, []);

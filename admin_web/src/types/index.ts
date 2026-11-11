@@ -77,7 +77,7 @@ export interface MenuItem {
 export interface StaffUser {
   uid: string;
   name: string;
-  role: 'ADMIN' | 'BARISTA' | 'KASIR';
+  role: 'ADMIN' | 'OWNER' | 'BARISTA' | 'CASHIER';
   is_active: boolean;
   created_at?: string;
   updated_at?: string;
@@ -87,6 +87,42 @@ export interface AppSettings {
   id: string;
   tax_percentage: number;
   service_charge_percentage: number;
+}
+
+export interface ReceiptTemplate {
+  id: 'PAID' | 'COMPLETED';
+  title: string;
+  header: string;
+  footer: string;
+  updated_at: string;
+}
+
+export interface SalesReport {
+  summary: {
+    revenue_rp: number;
+    subtotal_rp: number;
+    discount_rp: number;
+    tax_rp: number;
+    service_charge_rp: number;
+    transactions: number;
+    cancelled: number;
+    awaiting_payment: number;
+  };
+  methods: { method: string; transactions: number; revenue_rp: number }[];
+  products: { menu_item_id: string; name: string; quantity: number; revenue_rp: number }[];
+  daily: { day: string; transactions: number; revenue_rp: number }[];
+}
+
+export interface AdminAuditEntry {
+  id: string;
+  actor_uid: string | null;
+  actor_name: string;
+  action: string;
+  table_name: string;
+  record_id: string;
+  old_data: Record<string, unknown> | null;
+  new_data: Record<string, unknown> | null;
+  created_at: string;
 }
 
 export type DiscountType = 'PERCENT' | 'AMOUNT';

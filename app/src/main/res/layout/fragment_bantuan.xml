@@ -2,8 +2,10 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/bg_screen"
     android:fillViewport="true"
     android:scrollbars="none"
     tools:context=".BantuanFragment">
@@ -16,6 +18,16 @@
         android:paddingTop="12dp"
         android:paddingEnd="20dp"
         android:paddingBottom="24dp">
+
+        <ImageView
+            android:id="@+id/btnBack"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/cd_back"
+            android:padding="10dp"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@color/ngopi_ink" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -61,6 +73,7 @@
                 android:orientation="horizontal">
 
                 <TextView
+                    android:id="@+id/tvHelpRequestTitle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -70,6 +83,7 @@
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/tvHelpRequestBadge"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_badge"
@@ -84,6 +98,7 @@
             </LinearLayout>
 
             <TextView
+                android:id="@+id/tvHelpRequestDetail"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
@@ -93,6 +108,7 @@
                 android:textSize="13sp" />
 
             <TextView
+                android:id="@+id/tvHelpRequestTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
@@ -123,6 +139,9 @@
                 android:id="@+id/btnHelpPayment"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                android:minHeight="48dp"
                 android:layout_marginTop="14dp"
                 android:background="?attr/selectableItemBackground"
                 android:gravity="center_vertical"
@@ -166,6 +185,9 @@
                 android:id="@+id/btnHelpOrder"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                android:minHeight="48dp"
                 android:background="?attr/selectableItemBackground"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
@@ -208,6 +230,9 @@
                 android:id="@+id/btnHelpReceipt"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                android:minHeight="48dp"
                 android:background="?attr/selectableItemBackground"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"

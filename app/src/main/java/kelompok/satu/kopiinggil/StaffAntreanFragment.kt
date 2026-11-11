@@ -13,7 +13,6 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.launch
@@ -149,6 +148,7 @@ class StaffAntreanFragment : Fragment(R.layout.fragment_staff_antrean) {
                 // Ambil daftar pesanan dari customer_order dengan urutan terbaru di atas
                 val orders: List<StaffOrderDto> = try {
                     supabase.postgrest["customer_order"].select {
+                        filter { isIn("status", PRODUCTION_STATUSES) }
                         order("created_at", Order.DESCENDING)
                     }.decodeList()
                 } catch (_: Exception) {
@@ -156,7 +156,8 @@ class StaffAntreanFragment : Fragment(R.layout.fragment_staff_antrean) {
                 }
 
                 // Urutkan kembali secara descending di memori untuk memastikan yang terbaru selalu di paling atas
-                val sortedOrders = orders.sortedByDescending { it.createdAt.orEmpty() }
+                val sortedOrders = orders.filter { it.status in PRODUCTION_STATUSES }
+                    .sortedByDescending { it.createdAt.orEmpty() }
                 val orderIds = sortedOrders.map { it.id }
 
                 // Ambil item pesanan dari order_item
@@ -224,7 +225,7 @@ class StaffAntreanFragment : Fragment(R.layout.fragment_staff_antrean) {
                 "BARU" -> data.dto.status.equals("PAID", true) || data.dto.status.equals("BARU", true) || data.dto.status.equals("ACCEPTED", true)
                 "DIBUAT" -> data.dto.status.equals("PREPARING", true) || data.dto.status.equals("BREWING", true) || data.dto.status.equals("DIBUAT", true)
                 "SIAP" -> data.dto.status.equals("READY", true) || data.dto.status.equals("SIAP", true)
-                else -> !data.dto.status.equals("COMPLETED", true) && !data.dto.status.equals("CANCELLED", true)
+                else -> data.dto.status in PRODUCTION_STATUSES
             }
         }
 

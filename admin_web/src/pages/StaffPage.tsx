@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Users,
   Plus,
@@ -11,24 +11,31 @@ import {
   User,
   CheckCircle2,
 } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
-import { supabase, DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_KEY } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
+import { adminError } from '../lib/admin';
 import type { StaffUser } from '../types';
 
 export const StaffPage: React.FC = () => {
+  const { user } = useAuth();
   const [staffList, setStaffList] = useState<StaffUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const addDialog = useRef<HTMLDialogElement>(null);
 
   // Form states
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'ADMIN' | 'BARISTA' | 'KASIR'>('BARISTA');
+  const [role, setRole] = useState<'ADMIN' | 'BARISTA' | 'CASHIER'>('BARISTA');
   const [saving, setSaving] = useState(false);
   const [successInfo, setSuccessInfo] = useState<{ email: string; role: string } | null>(null);
+  const [error, setError] = useState('');
+  const [updating, setUpdating] = useState<string | null>(null);
 
   const loadStaff = async () => {
+    setLoading(true);
+    setError('');
     try {
       const { data, error } = await supabase
         .from('staff_user')
@@ -38,7 +45,7 @@ export const StaffPage: React.FC = () => {
       if (error) throw error;
       if (data) setStaffList(data as StaffUser[]);
     } catch (err) {
-      console.error(err);
+      setError(adminError(err, 'Gagal memuat staf. Silakan coba lagi.'));
     } finally {
       setLoading(false);
     }
@@ -48,57 +55,31 @@ export const StaffPage: React.FC = () => {
     loadStaff();
   }, []);
 
+  useEffect(() => {
+    if (showAddModal) addDialog.current?.showModal();
+  }, [showAddModal]);
+
   const handleAddStaff = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim() || !password) return;
+    if (!name.trim() || !email.trim() || !password) { setError('Nama, email, dan kata sandi wajib diisi.'); return; }
 
-    if (password.length < 6) {
-      alert('Kata sandi minimal 6 karakter');
+    if (password.length < 8 || password.length > 128) {
+      setError('Kata sandi harus 8–128 karakter');
       return;
     }
 
     setSaving(true);
+    setError('');
     try {
-      // Buat instance terpisah tanpa persistSession agar sesi admin saat ini tidak terganti
-      const tempAuthClient = createClient(DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_KEY, {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-        },
+      const { data, error } = await supabase.functions.invoke('admin-create-staff', {
+        body: { name: name.trim(), email: email.trim(), password, role },
       });
-
-      // 1. Daftarkan akun auth ke Supabase
-      const signUpRes = await tempAuthClient.auth.signUp({
-        email: email.trim(),
-        password: password,
-        options: {
-          data: {
-            name: name.trim(),
-            role: role,
-          },
-        },
-      });
-
-      if (signUpRes.error) {
-        throw new Error('Gagal membuat akun login: ' + signUpRes.error.message);
+      if (error) {
+        const response = error.context instanceof Response
+          ? await error.context.json().catch(() => null) : null;
+        throw new Error(response?.error || error.message);
       }
-
-      const uid = signUpRes.data.user?.id;
-      if (!uid) {
-        throw new Error('Gagal mendapatkan ID pengguna dari Supabase Auth');
-      }
-
-      // 2. Simpan role ke tabel staff_user
-      const { error: insertError } = await supabase.from('staff_user').insert({
-        uid: uid,
-        name: name.trim(),
-        role: role,
-        is_active: true,
-      });
-
-      if (insertError) {
-        throw new Error('Akun Auth dibuat, tetapi gagal simpan peran staff: ' + insertError.message);
-      }
+      if (!data?.uid) throw new Error('Server tidak mengembalikan akun staf. Muat ulang daftar sebelum mencoba lagi.');
 
       setSuccessInfo({ email: email.trim(), role });
       setName('');
@@ -108,27 +89,23 @@ export const StaffPage: React.FC = () => {
       setShowAddModal(false);
       loadStaff();
     } catch (err: any) {
-      alert(err.message || 'Terjadi kesalahan saat menambah staf');
+      setError(adminError(err, 'Gagal membuat staf. Periksa data lalu coba lagi.'));
     } finally {
       setSaving(false);
     }
   };
 
-  const toggleStaffActive = async (staff: StaffUser) => {
-    const nextVal = !staff.is_active;
-    setStaffList((prev) =>
-      prev.map((s) => (s.uid === staff.uid ? { ...s, is_active: nextVal } : s))
-    );
-
-    const { error } = await supabase
-      .from('staff_user')
-      .update({ is_active: nextVal })
-      .eq('uid', staff.uid);
-
-    if (error) {
-      alert('Gagal update status: ' + error.message);
-      loadStaff();
-    }
+  const updateStaff = async (staff: StaffUser, changes: Partial<Pick<StaffUser, 'role' | 'is_active'>>) => {
+    if (staff.uid === user?.id || staff.role === 'OWNER') return;
+    if (!confirm(`Perbarui akses ${staff.name}?`)) return;
+    setUpdating(staff.uid); setError('');
+    try {
+      const { data, error } = await supabase.from('staff_user').update(changes).eq('uid', staff.uid).select('*').single();
+      if (error) throw error;
+      if (!data) throw new Error('Perubahan akses belum tersimpan. Muat ulang daftar staf.');
+      setStaffList((rows) => rows.map((row) => row.uid === staff.uid ? data as StaffUser : row));
+    } catch (error) { setError(adminError(error, 'Gagal memperbarui akses staf. Silakan coba lagi.')); }
+    finally { setUpdating(null); }
   };
 
   const getRoleBadge = (r: string) => {
@@ -145,7 +122,7 @@ export const StaffPage: React.FC = () => {
             <Coffee className="w-3 h-3" /> Barista / Dapur
           </span>
         );
-      case 'KASIR':
+      case 'CASHIER':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
             <Receipt className="w-3 h-3" /> Kasir
@@ -161,7 +138,8 @@ export const StaffPage: React.FC = () => {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-6">
+    <div className="admin-page space-y-6">
+      {error && !showAddModal && <div role="alert" className="admin-error">{error} <button type="button" className="underline" onClick={() => void loadStaff()}>Muat ulang daftar</button></div>}
       {/* Top Bar */}
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div>
@@ -174,9 +152,10 @@ export const StaffPage: React.FC = () => {
         <button
           onClick={() => {
             setSuccessInfo(null);
+            setError('');
             setShowAddModal(true);
           }}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-xl transition-colors shadow-xs"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-amber-800 hover:bg-amber-900 text-white text-sm font-medium rounded-xl transition-colors shadow-xs"
         >
           <Plus className="w-4 h-4" />
           <span>Tambah Akun Staf</span>
@@ -203,7 +182,7 @@ export const StaffPage: React.FC = () => {
       )}
 
       {/* Staff Table */}
-      <div className="bg-white rounded-2xl border border-stone-200 shadow-xs overflow-hidden">
+      <div className="bg-white rounded-2xl border border-stone-200 shadow-xs overflow-x-auto">
         {loading ? (
           <div className="py-20 text-center text-sm text-stone-400">Memuat daftar staf...</div>
         ) : staffList.length === 0 ? (
@@ -233,7 +212,12 @@ export const StaffPage: React.FC = () => {
                       <div className="font-mono text-[10px] text-stone-400">UID: {staff.uid.slice(0, 13)}...</div>
                     </div>
                   </td>
-                  <td className="py-4 px-6">{getRoleBadge(staff.role)}</td>
+                  <td className="py-4 px-6"><div className="space-y-2">{getRoleBadge(staff.role)}
+                    <select className="admin-input" aria-label={`Peran ${staff.name}`} value={staff.role} disabled={updating !== null || staff.uid === user?.id || staff.role === 'OWNER'}
+                      onChange={(event) => void updateStaff(staff, { role: event.target.value as StaffUser['role'] })}>
+                      <option value="ADMIN">Admin</option><option value="BARISTA">Barista / Dapur</option><option value="CASHIER">Kasir</option>
+                      {staff.role === 'OWNER' && <option value="OWNER">Pemilik</option>}
+                    </select>{staff.uid === user?.id && <p className="text-xs text-stone-600">Akun Anda sendiri</p>}</div></td>
                   <td className="py-4 px-6">
                     <span
                       className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${
@@ -247,10 +231,11 @@ export const StaffPage: React.FC = () => {
                   </td>
                   <td className="py-4 px-6 text-right">
                     <button
-                      onClick={() => toggleStaffActive(staff)}
+                      disabled={updating !== null || staff.uid === user?.id || staff.role === 'OWNER'}
+                      onClick={() => void updateStaff(staff, { is_active: !staff.is_active })}
                       className="text-xs text-stone-500 hover:text-stone-900 font-medium px-2 py-1 rounded-lg hover:bg-stone-100 transition-colors"
                     >
-                      {staff.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                      {updating === staff.uid ? 'Menyimpan...' : staff.is_active ? 'Nonaktifkan' : 'Aktifkan'}
                     </button>
                   </td>
                 </tr>
@@ -262,14 +247,18 @@ export const StaffPage: React.FC = () => {
 
       {/* Add Staff Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+        <dialog ref={addDialog} aria-labelledby="add-staff-heading" className="m-auto w-[calc(100vw_-_2rem)] max-w-md border-0 bg-transparent p-0" onCancel={(event) => {
+          if (saving) event.preventDefault(); else setShowAddModal(false);
+        }}>
+          <div className="bg-white rounded-3xl max-w-md w-full max-h-[90dvh] overflow-y-auto p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-stone-100">
               <div>
-                <h3 className="font-bold text-base text-stone-900">Buat Akun Staf Baru</h3>
-                <p className="text-xs text-stone-400">Akun akan langsung dibuatkan akses login Supabase</p>
+                <h3 id="add-staff-heading" className="font-bold text-base text-stone-900">Buat Akun Staf Baru</h3>
+                <p className="text-sm text-stone-600">Email dan kata sandi ini digunakan staf untuk masuk.</p>
               </div>
               <button
+                disabled={saving}
+                aria-label="Tutup form staf"
                 onClick={() => setShowAddModal(false)}
                 className="p-1 text-stone-400 hover:text-stone-700 rounded-full"
               >
@@ -278,69 +267,84 @@ export const StaffPage: React.FC = () => {
             </div>
 
             <form onSubmit={handleAddStaff} className="space-y-4">
+              {error && <p role="alert" className="admin-error">{error}</p>}
               <div>
-                <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1">
+                <label htmlFor="staff-name" className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1">
                   Nama Lengkap *
                 </label>
                 <div className="relative">
                   <User className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
+                    id="staff-name"
                     type="text"
                     required
+                    maxLength={100}
+                    autoComplete="name"
+                    disabled={saving}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Mis. Farrel Barista"
-                    className="w-full pl-9 pr-3.5 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                    className="w-full pl-9 pr-3.5 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-800 focus:border-amber-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1">
+                <label htmlFor="staff-email" className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1">
                   Email Login *
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
+                    id="staff-email"
                     type="email"
                     required
+                    maxLength={254}
+                    autoComplete="email"
+                    disabled={saving}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="barista@kopiinggil.com"
-                    className="w-full pl-9 pr-3.5 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                    className="w-full pl-9 pr-3.5 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-800 focus:border-amber-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1">
+                <label htmlFor="staff-password" className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1">
                   Kata Sandi Akun *
                 </label>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
+                    id="staff-password"
                     type="password"
                     required
-                    minLength={6}
+                    autoComplete="new-password"
+                    disabled={saving}
+                    minLength={8}
+                    maxLength={128}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Minimal 6 karakter"
-                    className="w-full pl-9 pr-3.5 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                    placeholder="Minimal 8 karakter"
+                    className="w-full pl-9 pr-3.5 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-800 focus:border-amber-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1">
+                <label htmlFor="staff-role" className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1">
                   Peran / Posisi *
                 </label>
                 <select
+                  id="staff-role"
+                  disabled={saving}
                   value={role}
                   onChange={(e) => setRole(e.target.value as any)}
-                  className="w-full px-3.5 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                  className="w-full px-3.5 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-800 focus:border-amber-500"
                 >
                   <option value="BARISTA">Barista / Kitchen</option>
-                  <option value="KASIR">Kasir</option>
+                  <option value="CASHIER">Kasir</option>
                   <option value="ADMIN">Administrator</option>
                 </select>
               </div>
@@ -348,6 +352,7 @@ export const StaffPage: React.FC = () => {
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"
+                  disabled={saving}
                   onClick={() => setShowAddModal(false)}
                   className="flex-1 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold rounded-xl text-xs transition-colors"
                 >
@@ -356,14 +361,14 @@ export const StaffPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 py-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl text-xs transition-colors shadow-xs disabled:opacity-50"
+                  className="flex-1 py-2 bg-amber-800 hover:bg-amber-900 text-white font-semibold rounded-xl text-xs transition-colors shadow-xs disabled:opacity-50"
                 >
                   {saving ? 'Membuat Akun...' : 'Daftarkan Staf'}
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </dialog>
       )}
     </div>
   );

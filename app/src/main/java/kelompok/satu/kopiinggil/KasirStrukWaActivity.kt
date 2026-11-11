@@ -11,35 +11,19 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
 import androidx.lifecycle.lifecycleScope
-import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
-
-@Serializable
-private data class StrukCustomerDto(
-    @SerialName("order_id") val orderId: String = "",
-    val name: String = "",
-    @SerialName("phone_e164") val phoneE164: String = "",
-)
+import java.time.Instant
 
 class KasirStrukWaActivity : AppCompatActivity() {
-
-    private var orderId: String = ""
-    private var publicId: String = ""
-    private var customerPhone: String = ""
-    private var customerName: String = ""
-    private var tableLabel: String = ""
-    private var totalRp: Int = 0
-
-    private lateinit var tvEyebrow: TextView
+    private lateinit var orderId: String
+    private var receipt: OrderReceipt? = null
+    private var editedPhone: String? = null
     private lateinit var tvLastAttempt: TextView
     private lateinit var tvProviderStatus: TextView
     private lateinit var tvRecipientPhone: TextView
@@ -50,153 +34,178 @@ class KasirStrukWaActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_kasir_struk_wa)
         applyEdgeToEdge(R.id.main)
-
         orderId = intent.getStringExtra(EXTRA_ORDER_ID).orEmpty()
-        publicId = intent.getStringExtra(EXTRA_PUBLIC_ID).orEmpty()
-        customerPhone = intent.getStringExtra(EXTRA_PHONE).orEmpty()
-        customerName = intent.getStringExtra(EXTRA_CUSTOMER_NAME).orEmpty()
-        tableLabel = intent.getStringExtra(EXTRA_TABLE_LABEL).orEmpty().ifBlank { "Meja --" }
-        totalRp = intent.getIntExtra(EXTRA_TOTAL_RP, 0)
-
-        tvEyebrow = findViewById(R.id.tvReceiptEyebrow)
+        if (orderId.isBlank()) {
+            Toast.makeText(this, "Pilih pesanan lunas dari daftar transaksi", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
+        editedPhone = savedInstanceState?.getString("edited_phone")
         tvLastAttempt = findViewById(R.id.tvReceiptLastAttempt)
         tvProviderStatus = findViewById(R.id.tvReceiptProviderStatus)
         tvRecipientPhone = findViewById(R.id.tvReceiptRecipientPhone)
         etReason = findViewById(R.id.etReceiptResendReason)
         btnResend = findViewById(R.id.btnResendReceipt)
-
         findViewById<View>(R.id.btnBack).setOnClickListener { finish() }
         findViewById<View>(R.id.btnBackToOrderReceipt).setOnClickListener { finish() }
-
-        val dispId = publicId.ifBlank { orderId.take(8) }
-        tvEyebrow.text = "ORDER #$dispId"
-        tvLastAttempt.text = SimpleDateFormat("HH.mm", Locale.forLanguageTag("id-ID")).format(Date())
-        tvRecipientPhone.text = customerPhone.ifBlank { "Belum ada nomor" }
-
-        // Kasir dapat tap nomor telepon untuk mengedit jika nomor pelanggan berubah
-        tvRecipientPhone.setOnClickListener {
-            showEditPhoneDialog()
-        }
-
+        tvRecipientPhone.setOnClickListener { showEditPhoneDialog() }
         btnResend.setOnClickListener {
-            val phone = customerPhone.trim()
-            if (phone.isBlank()) {
-                showEditPhoneDialog()
-                return@setOnClickListener
-            }
-            sendReceiptWa(phone)
+            if (receipt == null) loadReceipt() else sendReceiptWa()
         }
-
-        loadCustomerInfo()
+        loadReceipt()
     }
 
-    private fun loadCustomerInfo() {
-        if (customerPhone.isNotBlank() && customerName.isNotBlank()) return
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putString("edited_phone", editedPhone)
+        super.onSaveInstanceState(outState)
+    }
 
+    private fun loadReceipt() {
+        btnResend.isEnabled = false
+        btnResend.text = "Memuat pesanan..."
+        tvRecipientPhone.isEnabled = false
         lifecycleScope.launch {
             try {
-                val customer = supabase.postgrest["order_customer"].select {
-                    filter { eq("order_id", orderId) }
-                }.decodeList<StrukCustomerDto>().firstOrNull()
+                val data = loadOrderReceipt(orderId)
+                receipt = data
+                findViewById<TextView>(R.id.tvReceiptEyebrow).text = "ORDER #${data.publicId.trimStart('#')} · ${data.tableLabel}"
+                tvRecipientPhone.text = editedPhone ?: data.phoneE164
+                tvLastAttempt.text = receiptTime(data.lastAttemptAt)
+                showStatus(data.lastAttemptStatus ?: "Belum ada pengiriman ulang")
+                btnResend.text = "Kirim ulang struk"
+                tvRecipientPhone.isEnabled = true
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                receipt = null
+                showStatus("Gagal memuat pesanan")
+                btnResend.text = "Coba muat kembali"
+                Toast.makeText(this@KasirStrukWaActivity, e.toUserMessage(this@KasirStrukWaActivity, R.string.err_receipt_load_failed), Toast.LENGTH_LONG).show()
+            } finally {
+                btnResend.isEnabled = true
+            }
+        }
+    }
 
-                if (customer != null) {
-                    customerName = customer.name
-                    if (customer.phoneE164.isNotBlank()) {
-                        customerPhone = customer.phoneE164
-                        tvRecipientPhone.text = customerPhone
-                    }
-                }
-            } catch (_: Exception) {}
+    private fun showStatus(status: String) {
+        tvProviderStatus.text = status
+        tvProviderStatus.setTextColor(getColor(if (status == "SENT") R.color.ngopi_primary else R.color.ngopi_ink))
+        findViewById<TextView>(R.id.tvReceiptDeliveryBadge).text = when (status) {
+            "SENT" -> "DITERIMA PROVIDER"
+            "FAILED" -> "PENGIRIMAN GAGAL"
+            "OPENED" -> "WHATSAPP DIBUKA"
+            else -> "KIRIM ULANG STRUK"
         }
     }
 
     private fun showEditPhoneDialog() {
         val input = EditText(this).apply {
             hint = "Contoh: 08123456789"
-            setText(customerPhone)
+            contentDescription = "Nomor WhatsApp penerima"
+            setText(editedPhone ?: receipt?.phoneE164.orEmpty())
             inputType = android.text.InputType.TYPE_CLASS_PHONE
-            setPadding(48, 32, 48, 32)
         }
-
-        AlertDialog.Builder(this)
-            .setTitle("Ubah Nomor WhatsApp")
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Ubah nomor untuk pengiriman ini")
             .setView(input)
-            .setPositiveButton("Simpan") { _, _ ->
-                val newPhone = input.text.toString().trim()
-                if (newPhone.isNotBlank()) {
-                    customerPhone = newPhone
-                    tvRecipientPhone.text = customerPhone
+            .setPositiveButton("Simpan", null)
+            .setNegativeButton("Batal", null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val phone = WhatsAppBotService.formatChatId(input.text.toString())?.substringBefore('@')
+                if (phone == null) {
+                    input.error = "Masukkan nomor WhatsApp Indonesia yang valid"
+                    input.requestFocus()
+                } else {
+                    editedPhone = "+$phone"
+                    tvRecipientPhone.text = editedPhone
+                    dialog.dismiss()
                 }
             }
-            .setNegativeButton("Batal", null)
-            .show()
+        }
+        dialog.show()
     }
 
-    private fun sendReceiptWa(phone: String) {
-        btnResend.isEnabled = false
-        Toast.makeText(this, "Mengirim struk WhatsApp...", Toast.LENGTH_SHORT).show()
-
+    private fun sendReceiptWa() {
         val reason = etReason.text.toString().trim().ifBlank { "Kirim ulang oleh kasir" }
-
+        if (reason.length > 500) {
+            etReason.error = "Alasan maksimal 500 karakter"
+            etReason.requestFocus()
+            return
+        }
+        btnResend.isEnabled = false
+        btnResend.text = "Mengirim struk..."
+        tvRecipientPhone.isEnabled = false
+        etReason.isEnabled = false
         lifecycleScope.launch {
-            val receiptMessage = buildString {
-                appendLine("☕ *KOPI INGGIL*")
-                appendLine("Jl. Raya Cafe No. 1, Yogyakarta")
-                appendLine("----------------------------------------")
-                appendLine("*NOTA TRANSAKSI PEMESANAN*")
-                appendLine("No. Pesanan : *#${publicId.ifBlank { orderId.take(8) }}*")
-                appendLine("Meja        : *$tableLabel*")
-                appendLine("Nama        : ${customerName.ifBlank { "Pelanggan" }}")
-                appendLine("Waktu       : ${SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.forLanguageTag("id-ID")).format(Date())} WIB")
-                appendLine("Total       : ${totalRp.toRupiah()}")
-                appendLine("Status      : LUNAS")
-                appendLine("----------------------------------------")
-                appendLine("Keterangan  : $reason")
-                appendLine("Terima kasih telah memesan di Kopi Inggil! 🙏")
-            }
-
-            val result = WhatsAppBotService.sendTextMessage(phone, receiptMessage, publicId)
-
-            btnResend.isEnabled = true
-            if (result.isSuccess) {
-                tvProviderStatus.text = "SENT"
-                tvProviderStatus.setTextColor(getColor(R.color.ngopi_primary))
-                Toast.makeText(this@KasirStrukWaActivity, "Struk berhasil dikirim ke WhatsApp!", Toast.LENGTH_LONG).show()
-
-                // Catat ke audit riwayat
-                try {
-                    val currentUser = supabase.auth.currentUserOrNull()
-                    supabase.postgrest["order_status_history"].insert(
-                        buildJsonObject {
-                            put("order_id", orderId)
-                            if (currentUser != null) put("actor_uid", currentUser.id)
-                            put("actor_type", "KASIR")
-                            put("note", "Kirim ulang struk WA: $reason")
-                        }
-                    )
-                } catch (_: Exception) {}
-
-            } else {
-                tvProviderStatus.text = "FAILED"
-                val err = result.exceptionOrNull()?.message ?: "Gagal terhubung"
-                showFallbackDirectWaDialog(phone, receiptMessage, err)
+            try {
+                // Ambil ulang agar pesanan yang baru dibatalkan tidak dikirim sebagai lunas.
+                val data = loadOrderReceipt(orderId)
+                receipt = data
+                val phone = WhatsAppBotService.formatChatId(editedPhone ?: data.phoneE164)?.substringBefore('@')
+                if (phone == null) {
+                    Toast.makeText(this@KasirStrukWaActivity, "Nomor WhatsApp tidak valid. Periksa bersama pelanggan.", Toast.LENGTH_LONG).show()
+                    showEditPhoneDialog()
+                    return@launch
+                }
+                val templateId = if (data.status == "COMPLETED") "COMPLETED" else "PAID"
+                val message = data.message(WhatsAppBotService.loadReceiptTemplate(templateId), reason)
+                val result = withContext(NonCancellable) {
+                    val sent = WhatsAppBotService.sendTextMessage(phone, message, data.publicId)
+                    recordAttempt(if (sent.isSuccess) "SENT" else "FAILED", phone, reason)
+                    sent
+                }
+                val status = if (result.isSuccess) "SENT" else "FAILED"
+                showStatus(status)
+                tvLastAttempt.text = receiptTime(Instant.now().toString())
+                if (result.isSuccess) {
+                    Toast.makeText(this@KasirStrukWaActivity, "Struk diterima provider WhatsApp", Toast.LENGTH_LONG).show()
+                } else {
+                    showFallbackDirectWaDialog(phone, message, reason)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                receipt = null
+                showStatus("Tidak dapat mengirim struk")
+                Toast.makeText(this@KasirStrukWaActivity, e.toUserMessage(this@KasirStrukWaActivity, R.string.err_receipt_send_failed), Toast.LENGTH_LONG).show()
+            } finally {
+                btnResend.isEnabled = true
+                btnResend.text = if (receipt == null) "Coba muat kembali" else "Kirim ulang struk"
+                tvRecipientPhone.isEnabled = true
+                etReason.isEnabled = true
             }
         }
     }
 
-    private fun showFallbackDirectWaDialog(phone: String, message: String, errorMsg: String) {
-        val cleanPhone = phone.filter { it.isDigit() }.let {
-            if (it.startsWith("0")) "62" + it.substring(1) else it
+    private suspend fun recordAttempt(status: String, phone: String, reason: String) {
+        // shortcut: WAHA dan audit terpisah; gunakan outbox server saat pengiriman dipindah dari laptop.
+        try {
+            supabase.postgrest.rpc("record_receipt_resend", buildJsonObject {
+                put("p_order_id", orderId)
+                put("p_result", status)
+                put("p_phone", phone)
+                put("p_reason", reason)
+            })
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            Toast.makeText(this, "Hasil pengiriman $status belum tercatat di server. Jangan langsung mengirim ulang bila struk sudah diterima.", Toast.LENGTH_LONG).show()
         }
+    }
 
+    private fun showFallbackDirectWaDialog(phone: String, message: String, reason: String) {
         AlertDialog.Builder(this)
-            .setTitle("Server WAHA Tidak Terjangkau")
-            .setMessage("Bot otomatis belum aktif ($errorMsg).\n\nApakah Anda ingin membuka aplikasi WhatsApp langsung untuk mengirim struk ini?")
-            .setPositiveButton("Buka WhatsApp Langsung") { _, _ ->
+            .setTitle("Struk belum berhasil dikirim")
+            .setMessage("Periksa WAHA dan koneksi. Anda juga dapat membuka WhatsApp untuk mengirim struk secara manual.")
+            .setPositiveButton("Buka WhatsApp") { _, _ ->
                 try {
-                    val uri = Uri.parse("https://api.whatsapp.com/send?phone=$cleanPhone&text=${Uri.encode(message)}")
+                    val uri = Uri.parse("https://api.whatsapp.com/send?phone=$phone&text=${Uri.encode(message)}")
                     startActivity(Intent(Intent.ACTION_VIEW, uri))
-                } catch (e: Exception) {
+                    showStatus("OPENED")
+                    lifecycleScope.launch { recordAttempt("OPENED", phone, reason) }
+                } catch (_: Exception) {
                     Toast.makeText(this, "Tidak dapat membuka WhatsApp", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -206,10 +215,5 @@ class KasirStrukWaActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_ORDER_ID = "extra_wa_order_id"
-        const val EXTRA_PUBLIC_ID = "extra_wa_public_id"
-        const val EXTRA_PHONE = "extra_wa_phone"
-        const val EXTRA_CUSTOMER_NAME = "extra_wa_customer_name"
-        const val EXTRA_TABLE_LABEL = "extra_wa_table_label"
-        const val EXTRA_TOTAL_RP = "extra_wa_total_rp"
     }
 }

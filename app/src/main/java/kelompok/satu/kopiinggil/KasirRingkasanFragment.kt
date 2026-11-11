@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
@@ -40,6 +41,7 @@ class KasirRingkasanFragment : Fragment(R.layout.fragment_kasir_ringkasan) {
     private lateinit var tvEmpty: TextView
 
     private var allOrders = listOf<KasirOrderDto>()
+    private var supportRequests = listOf<SupportRequest>()
     private var tableMap = mapOf<String, CafeTable>()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -63,7 +65,7 @@ class KasirRingkasanFragment : Fragment(R.layout.fragment_kasir_ringkasan) {
         }
 
         view.findViewById<View>(R.id.cardMetricBantuan).setOnClickListener {
-            Toast.makeText(requireContext(), "Menampilkan antrean bantuan meja", Toast.LENGTH_SHORT).show()
+            view.findViewById<ScrollView>(R.id.scrollKasirRingkasan).smoothScrollTo(0, llAttentionContainer.top)
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -109,6 +111,11 @@ class KasirRingkasanFragment : Fragment(R.layout.fragment_kasir_ringkasan) {
                 }
 
                 allOrders = orders
+                supportRequests = try {
+                    loadActiveSupportRequests()
+                } catch (_: Exception) {
+                    emptyList()
+                }
                 renderDashboard()
             } catch (e: Exception) {
                 if (!isSilent && isAdded) {
@@ -127,17 +134,33 @@ class KasirRingkasanFragment : Fragment(R.layout.fragment_kasir_ringkasan) {
         }
 
         tvCountBayar.text = String.format(Locale.getDefault(), "%02d", pendingPaymentOrders.size)
-        // Sementara metric bantuan menghitung permintaan perhatian (bayar tertunda / bantuan)
-        tvCountBantuan.text = String.format(Locale.getDefault(), "%02d", pendingPaymentOrders.size)
+        tvCountBantuan.text = String.format(Locale.getDefault(), "%02d", supportRequests.size)
 
         // 2. Tampilkan item yang butuh perhatian (attention container)
         llAttentionContainer.removeAllViews()
 
-        if (pendingPaymentOrders.isEmpty()) {
+        if (pendingPaymentOrders.isEmpty() && supportRequests.isEmpty()) {
             tvEmpty.visibility = View.VISIBLE
         } else {
             tvEmpty.visibility = View.GONE
             val inflater = LayoutInflater.from(requireContext())
+
+            for (request in supportRequests) {
+                val row = inflater.inflate(R.layout.item_kasir_attention, llAttentionContainer, false)
+                row.findViewById<TextView>(R.id.tvAttentionName).text = "${request.tableLabel} · ${request.topicTitle()}"
+                row.findViewById<TextView>(R.id.tvAttentionKindBadge).text =
+                    if (request.status == "ACKNOWLEDGED") "DITERIMA" else "BANTUAN"
+                val order = request.publicId?.let { "#${it.trimStart('#')} · " }.orEmpty()
+                val repeats = if (request.repeatCount > 1) " · ${request.repeatCount}× dipanggil" else ""
+                row.findViewById<TextView>(R.id.tvAttentionSub).text =
+                    "$order${formatTime(request.lastRequestedAt)}$repeats"
+                row.setOnClickListener {
+                    startActivity(Intent(requireContext(), KasirTanganiBantuanActivity::class.java).apply {
+                        putExtra(KasirTanganiBantuanActivity.EXTRA_REQUEST_ID, request.id)
+                    })
+                }
+                llAttentionContainer.addView(row)
+            }
 
             for (order in pendingPaymentOrders) {
                 val row = inflater.inflate(R.layout.item_kasir_attention, llAttentionContainer, false)

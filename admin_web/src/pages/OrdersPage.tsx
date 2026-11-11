@@ -69,15 +69,18 @@ export const OrdersPage: React.FC = () => {
   const tableMap = new Map(tables.map((t) => [t.id, t.label]));
 
   const updateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
+    const order = orders.find((item) => item.id === orderId);
+    if (!order) return;
     setActionLoading(orderId);
     try {
-      const { error } = await supabase
-        .from('customer_order')
-        .update({ status: newStatus })
-        .eq('id', orderId);
+      const { error } = await supabase.rpc('transition_order', {
+        p_order_id: orderId, p_expected_status: order.status, p_status: newStatus,
+        p_note: 'Diperbarui melalui admin web',
+      });
 
       if (error) {
         alert('Gagal mengubah status: ' + error.message);
+        await loadData();
       } else {
         setOrders((prev) =>
           prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
@@ -94,15 +97,16 @@ export const OrdersPage: React.FC = () => {
   };
 
   const cancelOrder = async (orderId: string) => {
+    const order = orders.find((item) => item.id === orderId);
+    if (!order) return;
     const reason = prompt('Masukkan alasan pembatalan:');
-    if (!reason) return;
+    if (!reason?.trim()) return;
 
     setActionLoading(orderId);
     try {
-      const { error } = await supabase
-        .from('customer_order')
-        .update({ status: 'CANCELLED', cancellation_reason: reason })
-        .eq('id', orderId);
+      const { error } = await supabase.rpc('transition_order', {
+        p_order_id: orderId, p_expected_status: order.status, p_status: 'CANCELLED', p_note: reason.trim(),
+      });
 
       if (error) {
         alert('Gagal membatalkan: ' + error.message);
@@ -313,18 +317,18 @@ export const OrdersPage: React.FC = () => {
                       <Eye className="w-4 h-4" />
                     </button>
 
-                    {order.status === 'PAID' && (
+                    {['PAID', 'ACCEPTED'].includes(order.status) && (
                       <button
                         disabled={isBusy}
-                        onClick={() => updateOrderStatus(order.id, 'PREPARING')}
+                        onClick={() => updateOrderStatus(order.id, order.status === 'PAID' ? 'ACCEPTED' : 'PREPARING')}
                         className="flex-1 py-2 px-3 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-xl text-xs transition-colors shadow-xs flex items-center justify-center gap-1.5 disabled:opacity-50"
                       >
                         <Coffee className="w-3.5 h-3.5" />
-                        <span>Mulai Buat</span>
+                        <span>{order.status === 'PAID' ? 'Terima Pesanan' : 'Mulai Buat'}</span>
                       </button>
                     )}
 
-                    {['ACCEPTED', 'PREPARING'].includes(order.status) && (
+                    {order.status === 'PREPARING' && (
                       <button
                         disabled={isBusy}
                         onClick={() => updateOrderStatus(order.id, 'READY')}

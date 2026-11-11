@@ -9,6 +9,9 @@ Panel administrasi berbasis web untuk manajemen operasional outlet Kopi Inggil (
 4. **Meja & Kode QR**: Registrasi nomor meja, toggle meja aktif/nonaktif, dan generate stiker QR siap cetak untuk dipasang di meja kafe.
 5. **Kelola Staf**: Manajemen peran pengguna (Admin, Owner, Barista/Kitchen, Kasir).
 6. **Pengaturan Pajak & Biaya**: Persentase PB1 restoran, service charge, serta konfigurasi database Supabase.
+7. **Laporan Penjualan**: Filter periode WIB, omzet, transaksi, menu terlaris, metode pembayaran, dan unduh CSV.
+8. **Template Struk WhatsApp**: Edit header, judul, dan penutup struk lunas/selesai dengan pratinjau.
+9. **Audit Admin**: Filter pelaku, periode, bagian, dan tindakan; lihat nilai sebelum/sesudah perubahan.
 
 ## Cara Menjalankan
 
@@ -19,4 +22,10 @@ npm run dev
 ```
 
 Buka `http://localhost:5173` di browser.
-Dapat login menggunakan akun staf Supabase Auth atau menggunakan tombol **Mode Pengembang / Demo** untuk akses langsung.
+Login menggunakan akun Supabase Auth dengan profil `staff_user` berperan `ADMIN` atau `OWNER` dan `is_active = true`. Panel menolak akses jika profil tidak tersedia atau gagal diverifikasi. Peran kasir di database adalah `CASHIER`.
+
+Pembatasan panel harus dilengkapi kebijakan RLS Supabase untuk melindungi akses database langsung; pemeriksaan di browser tidak menggantikan otorisasi server.
+
+Jalankan `npm test` untuk tes halaman, akses admin, laporan, CSV, fungsi staf, dan RLS PostgreSQL. Jalankan `npm run build` untuk build produksi.
+
+Petunjuk backend dan status pemasangan ada di [supabase/README.md](supabase/README.md). Pekerjaan No. 27 (QR) ditunda dan disimpan terpisah di `supabase/deferred/`.

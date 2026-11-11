@@ -1,0 +1,9 @@
+project_id = "uvaeklvwkxibwcrhofku"
+
+[functions.admin-create-staff]
+# The handler verifies the user token with Auth and requires an active ADMIN/OWNER profile.
+verify_jwt = false
+
+[functions.refund-order]
+# The handler verifies the user token, then the SQL function enforces CASHIER/ADMIN/OWNER.
+verify_jwt = false

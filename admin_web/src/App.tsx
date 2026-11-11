@@ -10,10 +10,11 @@ import { TablesPage } from './pages/TablesPage';
 import { StaffPage } from './pages/StaffPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { LoginPage } from './pages/LoginPage';
+import { ReportsPage } from './pages/ReportsPage';
+import { AuditPage } from './pages/AuditPage';
 import { supabase } from './lib/supabase';
 
 const AdminLayout: React.FC = () => {
-  const { user, loading } = useAuth();
   const [currentTab, setCurrentTab] = useState<NavTab>('dashboard');
   const [activeOrdersCount, setActiveOrdersCount] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -49,21 +50,6 @@ const AdminLayout: React.FC = () => {
     setRefreshKey((k) => k + 1);
     setTimeout(() => setIsRefreshing(false), 500);
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-stone-900 flex items-center justify-center text-white">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-amber-600 border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm font-medium text-stone-400">Memuat Kopi Inggil Admin...</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <LoginPage />;
-  }
 
   const getPageInfo = (): { title: string; subtitle: string } => {
     switch (currentTab) {
@@ -102,6 +88,10 @@ const AdminLayout: React.FC = () => {
           title: 'Pengaturan Operasional & Biaya',
           subtitle: 'Konfigurasi pajak restoran (PB1), biaya layanan, dan koneksi Supabase.',
         };
+      case 'reports':
+        return { title: 'Laporan Penjualan', subtitle: 'Omzet, transaksi, menu terlaris, dan metode pembayaran dalam periode WIB.' };
+      case 'audit':
+        return { title: 'Log Audit Admin', subtitle: 'Telusuri siapa mengubah data, kapan, serta nilai sebelum dan sesudahnya.' };
       default:
         return { title: 'Admin', subtitle: '' };
     }
@@ -110,7 +100,8 @@ const AdminLayout: React.FC = () => {
   const { title, subtitle } = getPageInfo();
 
   return (
-    <div className="flex min-h-screen bg-stone-100 font-sans">
+    <div className="flex min-h-screen flex-col bg-stone-100 font-sans md:flex-row">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:bg-white focus:p-3">Langsung ke konten</a>
       <Sidebar
         currentTab={currentTab}
         onSelectTab={setCurrentTab}
@@ -125,7 +116,7 @@ const AdminLayout: React.FC = () => {
           isRefreshing={isRefreshing}
         />
 
-        <main className="flex-1 overflow-y-auto" key={refreshKey}>
+        <main id="main-content" className="flex-1 overflow-y-auto" key={refreshKey}>
           {currentTab === 'dashboard' && <DashboardPage onNavigate={setCurrentTab} />}
           {currentTab === 'orders' && <OrdersPage />}
           {currentTab === 'menu' && <MenuPage />}
@@ -133,16 +124,41 @@ const AdminLayout: React.FC = () => {
           {currentTab === 'tables' && <TablesPage />}
           {currentTab === 'staff' && <StaffPage />}
           {currentTab === 'settings' && <SettingsPage />}
+          {currentTab === 'reports' && <ReportsPage />}
+          {currentTab === 'audit' && <AuditPage />}
         </main>
       </div>
     </div>
   );
 };
 
+const AdminAccess: React.FC = () => {
+  const { user, staffUser, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-stone-900 flex items-center justify-center text-white">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-amber-600 border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm font-medium text-stone-400">Memuat Kopi Inggil Admin...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user || staffUser?.uid !== user.id || !['ADMIN', 'OWNER'].includes(staffUser.role) || staffUser.is_active !== true) {
+    return <LoginPage accessError={user
+      ? 'Akses admin belum terverifikasi. Gunakan akun ADMIN/OWNER yang aktif atau coba masuk kembali.'
+      : undefined} />;
+  }
+
+  return <AdminLayout key={user.id} />;
+};
+
 export default function App() {
   return (
     <AuthProvider>
-      <AdminLayout />
+      <AdminAccess />
     </AuthProvider>
   );
 }

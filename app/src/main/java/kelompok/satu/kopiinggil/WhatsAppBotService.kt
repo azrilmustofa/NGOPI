@@ -2,6 +2,8 @@ package kelompok.satu.kopiinggil
 
 import android.util.Log
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -45,21 +47,32 @@ object WhatsAppBotService {
     // Format nomor WhatsApp: ubah 08xxx / +628xxx / 8xxx menjadi 628xxx@c.us
     fun formatChatId(rawPhone: String): String? {
         val digits = rawPhone.filter(Char::isDigit)
-        if (digits.length < 9) return null
         val normalized = when {
             digits.startsWith("62") -> digits
             digits.startsWith("0") -> "62" + digits.substring(1)
             else -> "62$digits"
         }
-        return "$normalized@c.us"
+        return if (normalized.matches(Regex("62[0-9]{8,13}"))) "$normalized@c.us" else null
     }
 
-    fun buildReceiptText(order: PlacedOrder, customerName: String): String {
+    suspend fun loadReceiptTemplate(id: String): ReceiptTemplate? {
+        return try {
+            supabase.postgrest["receipt_template"].select {
+                filter { eq("id", id) }
+            }.decodeList<ReceiptTemplate>().singleOrNull()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "Template struk tidak dapat dimuat; menggunakan format bawaan", e)
+            null
+        }
+    }
+
+    fun buildReceiptText(order: PlacedOrder, customerName: String, template: ReceiptTemplate? = null): String {
         val sb = StringBuilder()
-        sb.appendLine("☕ *KOPI INGGIL*")
-        sb.appendLine("Jl. Raya Cafe No. 1, Yogyakarta")
+        sb.appendLine(template?.header ?: "☕ *KOPI INGGIL*\nJl. Raya Cafe No. 1, Yogyakarta")
         sb.appendLine("----------------------------------------")
-        sb.appendLine("*NOTA TRANSAKSI PEMESANAN*")
+        sb.appendLine("*${template?.title ?: "NOTA TRANSAKSI PEMESANAN"}*")
         sb.appendLine("No. Pesanan : *${order.number}*")
         sb.appendLine("Meja        : *Meja %02d (Dine-in)*".format(order.table))
         sb.appendLine("Waktu       : ${order.paidAt} WIB")
@@ -84,8 +97,7 @@ object WhatsAppBotService {
         sb.appendLine("----------------------------------------")
         sb.appendLine("Status: *${order.statusLabel.uppercase()}*")
         sb.appendLine()
-        sb.appendLine("Pesanan Anda sedang disiapkan oleh barista kami.")
-        sb.appendLine("Terima kasih telah memesan di Kopi Inggil! 🙏")
+        sb.appendLine(template?.footer ?: "Pesanan Anda sedang disiapkan oleh barista kami.\nTerima kasih telah memesan di Kopi Inggil! 🙏")
         return sb.toString().trim()
     }
 
@@ -96,12 +108,12 @@ object WhatsAppBotService {
         customerName: String,
         itemsSummary: List<String>,
         totalRp: Int,
+        template: ReceiptTemplate? = null,
     ): String {
         val sb = StringBuilder()
-        sb.appendLine("☕ *KOPI INGGIL*")
-        sb.appendLine("Jl. Raya Cafe No. 1, Yogyakarta")
+        sb.appendLine(template?.header ?: "☕ *KOPI INGGIL*\nJl. Raya Cafe No. 1, Yogyakarta")
         sb.appendLine("----------------------------------------")
-        sb.appendLine("*NOTA TRANSAKSI PEMESANAN*")
+        sb.appendLine("*${template?.title ?: "NOTA TRANSAKSI PEMESANAN"}*")
         sb.appendLine("No. Pesanan : *$orderNumber*")
         sb.appendLine("Meja        : *$tableLabel*")
         sb.appendLine("Waktu       : $paidAtTime WIB")
@@ -117,8 +129,7 @@ object WhatsAppBotService {
         sb.appendLine("----------------------------------------")
         sb.appendLine("Status: *SELESAI*")
         sb.appendLine()
-        sb.appendLine("Pesanan Anda telah selesai dan siap dinikmati.")
-        sb.appendLine("Terima kasih telah memesan di Kopi Inggil! 🙏")
+        sb.appendLine(template?.footer ?: "Pesanan Anda telah selesai dan siap dinikmati.\nTerima kasih telah memesan di Kopi Inggil! 🙏")
         return sb.toString().trim()
     }
 
@@ -200,7 +211,7 @@ object WhatsAppBotService {
             return Result.failure(IllegalStateException("Nomor WhatsApp belum terdaftar di profil akun"))
         }
 
-        val message = buildReceiptText(order, name)
+        val message = buildReceiptText(order, name, loadReceiptTemplate("PAID"))
         return sendTextMessage(rawPhone, message, order.number)
     }
 }

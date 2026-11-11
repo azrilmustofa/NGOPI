@@ -365,6 +365,17 @@
             android:visibility="gone" />
 
         <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnResendOrderReceipt"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_chip"
+            android:text="Kirim ulang struk WhatsApp"
+            android:textColor="@color/ngopi_primary"
+            android:visibility="gone" />
+
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnBackToTxList"
             android:layout_width="match_parent"
             android:layout_height="44dp"

@@ -77,4 +77,18 @@ class WhatsAppBotTest {
         assertTrue(receipt.contains("Status: *SELESAI*"))
         assertTrue(receipt.contains("Rp36.000"))
     }
+    @Test
+    fun customTemplate_keepsTransactionDetails() {
+        val template = ReceiptTemplate("COMPLETED", "STRUK KAFE", "Kopi Inggil Cabang Utama", "Sampai jumpa kembali.")
+        val receipt = WhatsAppBotService.buildCompletedReceiptText(
+            "NG-TEST99", "Meja 03", "14.20", "Daffa", listOf("2x Kopi Gula Aren"), 36000, template,
+        )
+        assertTrue(receipt.startsWith(template.header))
+        assertTrue(receipt.contains("*STRUK KAFE*"))
+        assertTrue(receipt.endsWith(template.footer))
+        assertTrue(receipt.contains("NG-TEST99"))
+        assertTrue(receipt.contains("2x Kopi Gula Aren"))
+        assertTrue(receipt.contains("Rp36.000"))
+        assertTrue(receipt.contains("Status: *SELESAI*"))
+    }
 }

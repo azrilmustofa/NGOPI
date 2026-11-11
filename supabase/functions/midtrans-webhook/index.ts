@@ -35,7 +35,7 @@ function methodGroup(paymentType: string): string {
   return "EWALLET";
 }
 
-type PaymentStatus = "PAID" | "PENDING" | "FAILED" | "CANCELLED" | "EXPIRED";
+type PaymentStatus = "PAID" | "PENDING" | "FAILED" | "CANCELLED" | "EXPIRED" | "REFUNDED";
 
 function mapStatus(transactionStatus: string, fraudStatus?: string): PaymentStatus | null {
   switch (transactionStatus) {
@@ -52,21 +52,11 @@ function mapStatus(transactionStatus: string, fraudStatus?: string): PaymentStat
       return "CANCELLED";
     case "expire":
       return "EXPIRED";
+    case "refund":
+      return "REFUNDED";
     default:
-      return null; // refund dll. belum ditangani
+      return null;
   }
-}
-
-// Riwayat status bersifat pelengkap: kegagalannya hanya dicatat.
-async function addHistory(orderId: string, from: string, to: string, note: string) {
-  const res = await admin.from("order_status_history").insert({
-    order_id: orderId,
-    actor_type: "SYSTEM",
-    from_status: from,
-    to_status: to,
-    note,
-  });
-  if (res.error) console.error("order_status_history", res.error);
 }
 
 Deno.serve(async (req) => {
@@ -85,7 +75,7 @@ Deno.serve(async (req) => {
 
   const attemptRes = await admin
     .from("payment_attempt")
-    .select("id, order_id, amount_rp")
+    .select("id, order_id, amount_rp, status")
     .eq("provider_order_id", n.order_id)
     .maybeSingle();
   if (attemptRes.error) {
@@ -128,17 +118,23 @@ Deno.serve(async (req) => {
     patch.paid_at = new Date().toISOString();
     patch.paid_source = "MIDTRANS_WEBHOOK";
   }
-  const upd = await admin
+  const updateAttempt = admin
     .from("payment_attempt")
     .update(patch)
-    .eq("id", attempt.id)
-    .not("status", "in", "(PAID,REFUND_PENDING,REFUNDED)")
-    .select("id");
+    .eq("id", attempt.id);
+  const upd = next === "REFUNDED"
+    ? await updateAttempt.in("status", ["PAID", "REFUND_PENDING"]).select("id")
+    : await updateAttempt.not("status", "in", "(PAID,REFUND_PENDING,REFUNDED)").select("id");
   if (upd.error) {
     console.error("update payment_attempt", upd.error);
     return json(500, { error: "Gagal memperbarui pembayaran" });
   }
-  if (!upd.data?.length) return json(200, { ignored: "pembayaran sudah final" });
+  // Webhook ulang harus dapat menyelesaikan order bila update sebelumnya gagal setelah attempt lunas.
+  const retryingFinal = (next === "PAID" && attempt.status === "PAID") ||
+    (next === "REFUNDED" && attempt.status === "REFUNDED");
+  if (!upd.data?.length && !retryingFinal) {
+    return json(200, { ignored: "pembayaran sudah final" });
+  }
 
   if (next === "PAID") {
     const ord = await admin
@@ -151,8 +147,26 @@ Deno.serve(async (req) => {
       console.error("update customer_order", ord.error);
       return json(500, { error: "Gagal memperbarui pesanan" });
     }
-    if (ord.data?.length) await addHistory(attempt.order_id, "AWAITING_PAYMENT", "PAID", "Pembayaran Midtrans berhasil");
-    else console.error("Order tidak lagi AWAITING_PAYMENT saat pembayaran masuk", attempt.order_id);
+    if (!ord.data?.length) console.info("Order tidak lagi AWAITING_PAYMENT saat pembayaran masuk", attempt.order_id);
+  } else if (next === "REFUNDED") {
+    const refund = await admin.from("refund_request").select("id, refund_key")
+      .eq("payment_attempt_id", attempt.id).maybeSingle();
+    if (refund.error) {
+      console.error("baca refund_request", refund.error);
+      return json(500, { error: "Gagal membaca refund" });
+    }
+    if (refund.data) {
+      const saved = await admin.rpc("update_refund_result", {
+        p_refund_id: refund.data.id,
+        p_status: "REFUNDED",
+        p_provider_reference: n.refund_chargeback_id ?? n.refund_id ?? refund.data.refund_key,
+        p_provider_response: n,
+      });
+      if (saved.error) {
+        console.error("simpan hasil refund", saved.error);
+        return json(500, { error: "Gagal menyimpan hasil refund" });
+      }
+    }
   } else if (next === "EXPIRED" || next === "CANCELLED") {
     // Transaksi lama yang kedaluwarsa/dibatalkan (mis. setelah "Coba bayar lagi") tidak boleh membatalkan
     // pesanan yang masih punya transaksi lain yang aktif atau sudah lunas.
@@ -179,7 +193,6 @@ Deno.serve(async (req) => {
       console.error("update customer_order", ord.error);
       return json(500, { error: "Gagal memperbarui pesanan" });
     }
-    if (ord.data?.length) await addHistory(attempt.order_id, "AWAITING_PAYMENT", "CANCELLED", reason);
   }
 
   return json(200, { ok: true });

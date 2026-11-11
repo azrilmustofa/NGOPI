@@ -15,15 +15,15 @@ export const Header: React.FC<HeaderProps> = ({
   isRefreshing = false,
 }) => {
   return (
-    <header className="bg-white border-b border-stone-200 px-8 py-5 flex items-center justify-between sticky top-0 z-10 shadow-xs">
-      <div>
+    <header className="bg-white border-b border-stone-200 px-4 sm:px-8 py-5 flex items-center justify-between gap-3 sticky top-0 z-10 shadow-xs">
+      <div className="min-w-0">
         <h2 className="text-xl font-bold text-stone-900 tracking-tight">{title}</h2>
         {subtitle && <p className="text-sm text-stone-500 mt-0.5">{subtitle}</p>}
       </div>
 
       <div className="flex items-center gap-3">
         {/* Realtime live tag */}
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-semibold">
+        <div className="hidden md:inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-semibold">
           <Radio className="w-3.5 h-3.5 animate-pulse text-emerald-600" />
           <span>Realtime Aktif</span>
         </div>

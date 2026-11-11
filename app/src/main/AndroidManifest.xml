@@ -78,6 +78,12 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
+            android:name=".BantuanActivity"
+            android:exported="false" />
+        <activity
+            android:name=".KasirTanganiBantuanActivity"
+            android:exported="false" />
+        <activity
             android:name=".StaffDetailProduksiActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />

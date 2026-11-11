@@ -20,8 +20,8 @@
 
         <ImageView
             android:id="@+id/btnBack"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/cd_back"
             android:padding="6dp"
@@ -34,7 +34,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:letterSpacing="0.1"
-            android:text="ORDER #NG-2839"
+            android:text="Memuat pesanan..."
             android:textColor="@color/ngopi_primary"
             android:textSize="11sp"
             android:textStyle="bold" />
@@ -53,7 +53,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:lineSpacingMultiplier="1.1"
-            android:text="Pembayaran PAID · Produksi tetap berjalan"
+            android:text="Kirim struk dari pesanan yang dipilih. Periksa nomor penerima sebelum mengirim."
             android:textColor="@color/ngopi_muted"
             android:textSize="13sp" />
     </LinearLayout>
@@ -82,6 +82,7 @@
                 android:padding="16dp">
 
                 <TextView
+                    android:id="@+id/tvReceiptDeliveryBadge"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_badge_new"
@@ -89,7 +90,7 @@
                     android:paddingTop="4dp"
                     android:paddingEnd="10dp"
                     android:paddingBottom="4dp"
-                    android:text="PENGIRIMAN GAGAL"
+                    android:text="KIRIM ULANG STRUK"
                     android:textColor="@color/ngopi_error"
                     android:textSize="11sp"
                     android:textStyle="bold" />
@@ -110,7 +111,7 @@
                         android:id="@+id/tvReceiptLastAttempt"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="09.40"
+                        android:text="Belum tercatat"
                         android:textColor="@color/ngopi_ink"
                         android:textSize="13sp"
                         android:textStyle="bold" />
@@ -132,7 +133,7 @@
                         android:id="@+id/tvReceiptProviderStatus"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="FAILED"
+                        android:text="Belum dimuat"
                         android:textColor="@color/ngopi_error"
                         android:textSize="13sp"
                         android:textStyle="bold" />
@@ -154,7 +155,13 @@
                         android:id="@+id/tvReceiptRecipientPhone"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="+62 812 •••• 7890"
+                        android:text="Belum dimuat"
+                        android:contentDescription="Ubah nomor WhatsApp penerima untuk pengiriman ini"
+                        android:minHeight="48dp"
+                        android:gravity="center_vertical"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:textColor="@color/ngopi_ink"
                         android:textSize="13sp"
                         android:textStyle="bold" />
@@ -199,7 +206,7 @@
                     android:layout_marginStart="10dp"
                     android:layout_weight="1"
                     android:lineSpacingMultiplier="1.15"
-                    android:text="Kirim ulang akan membuat tugas baru dan mencatat staf, waktu, serta alasan. Tidak mengubah pembayaran."
+                    android:text="Hasil kirim ulang dicatat bersama staf, waktu, dan alasan. Pembayaran tetap sama. Membuka WhatsApp belum berarti pesan terkirim."
                     android:textColor="@color/ngopi_ink"
                     android:textSize="12sp" />
             </LinearLayout>
@@ -224,7 +231,9 @@
                 <EditText
                     android:id="@+id/etReceiptResendReason"
                     android:layout_width="match_parent"
-                    android:layout_height="44dp"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:maxLength="500"
                     android:layout_marginTop="8dp"
                     android:background="@drawable/bg_input_default"
                     android:hint="Pelanggan belum menerima struk"
@@ -254,7 +263,8 @@
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnResendReceipt"
             android:layout_width="match_parent"
-            android:layout_height="46dp"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
             android:background="@drawable/bg_button_primary"
             android:text="Kirim ulang struk"
             android:textColor="@color/white"
@@ -264,7 +274,8 @@
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnBackToOrderReceipt"
             android:layout_width="match_parent"
-            android:layout_height="44dp"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
             android:layout_marginTop="8dp"
             android:background="@drawable/bg_chip"
             android:text="Kembali ke order"

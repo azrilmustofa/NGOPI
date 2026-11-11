@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ArrowRight, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-export const LoginPage: React.FC = () => {
+export const LoginPage: React.FC<{ accessError?: string }> = ({ accessError }) => {
   const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -43,10 +43,10 @@ export const LoginPage: React.FC = () => {
           </p>
         </div>
 
-        {errorMsg && (
+        {(errorMsg || accessError) && (
           <div className="p-3.5 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-2.5 text-xs text-red-700">
             <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-600" />
-            <span>{errorMsg}</span>
+            <span>{errorMsg || accessError}</span>
           </div>
         )}
 

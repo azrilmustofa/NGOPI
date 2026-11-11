@@ -13,16 +13,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
-import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -65,12 +63,6 @@ private data class StaffOrderItemOptionDto(
 )
 
 @Serializable
-private data class OrderStatusUpdateDto(
-    val status: String,
-    @SerialName("updated_at") val updatedAt: String,
-)
-
-@Serializable
 private data class OrderStatusHistoryDto(
     val id: String = "",
     @SerialName("order_id") val orderId: String = "",
@@ -84,7 +76,7 @@ class StaffDetailProduksiActivity : AppCompatActivity() {
     private var orderId: String = ""
     private var publicId: String = ""
     private var tableLabel: String = ""
-    private var currentStatus: String = "PAID"
+    private var currentStatus: String = ""
     private var createdAtIso: String? = null
     private var paidAtIso: String? = null
     private var updatedAtIso: String? = null
@@ -102,7 +94,6 @@ class StaffDetailProduksiActivity : AppCompatActivity() {
         orderId = intent.getStringExtra(EXTRA_ORDER_ID).orEmpty()
         publicId = intent.getStringExtra(EXTRA_PUBLIC_ID).orEmpty()
         tableLabel = intent.getStringExtra(EXTRA_TABLE_LABEL).orEmpty().ifBlank { "Meja --" }
-        currentStatus = intent.getStringExtra(EXTRA_STATUS).orEmpty().ifBlank { "PAID" }
         createdAtIso = intent.getStringExtra(EXTRA_CREATED_AT)
 
         if (orderId.isBlank()) {
@@ -111,7 +102,16 @@ class StaffDetailProduksiActivity : AppCompatActivity() {
             return
         }
 
-        render()
+        setContentView(R.layout.activity_staff_detail_produksi)
+        applyEdgeToEdge(R.id.main)
+        findViewById<View>(R.id.btnBack).setOnClickListener { finish() }
+        findViewById<AppCompatButton>(R.id.btnStaffActionPrimary).apply {
+            text = "Memuat pesanan..."
+            isEnabled = false
+        }
+        findViewById<TextView>(R.id.tvStaffCurrentStatusBadge).text = "Memuat"
+        findViewById<TextView>(R.id.tvStaffDetailSubtitle).text = "Memeriksa status pembayaran pesanan..."
+        findViewById<View>(R.id.btnStaffActionSecondary).setOnClickListener { finish() }
         loadDataFromSupabase()
     }
 
@@ -119,22 +119,22 @@ class StaffDetailProduksiActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 // Ambil data order terbaru
-                val order = try {
-                    supabase.postgrest["customer_order"].select {
-                        filter { eq("id", orderId) }
-                    }.decodeList<StaffOrderDetailDto>().firstOrNull()
-                } catch (_: Exception) {
-                    null
-                }
+                val order = supabase.postgrest["customer_order"].select {
+                    filter { eq("id", orderId) }
+                }.decodeList<StaffOrderDetailDto>().singleOrNull()
+                    ?: error("Pesanan tidak ditemukan")
 
-                if (order != null) {
-                    if (order.publicId.isNotBlank()) publicId = order.publicId
-                    currentStatus = order.status
-                    totalRp = order.totalRp
-                    createdAtIso = order.createdAt
-                    paidAtIso = order.paidAt
-                    updatedAtIso = order.updatedAt
+                if (order.status !in RECEIPT_STATUSES) {
+                    Toast.makeText(this@StaffDetailProduksiActivity, "Pesanan belum lunas atau sudah dibatalkan", Toast.LENGTH_LONG).show()
+                    finish()
+                    return@launch
                 }
+                if (order.publicId.isNotBlank()) publicId = order.publicId
+                currentStatus = order.status
+                totalRp = order.totalRp
+                createdAtIso = order.createdAt
+                paidAtIso = order.paidAt
+                updatedAtIso = order.updatedAt
 
                 // Ambil data pemesan untuk keperluan kirim nota via WhatsApp
                 try {
@@ -173,28 +173,37 @@ class StaffDetailProduksiActivity : AppCompatActivity() {
                 }
 
                 // Ambil riwayat status
-                statusHistories = try {
-                    supabase.postgrest["order_status_history"].select {
-                        filter { eq("order_id", orderId) }
-                        order("created_at", Order.ASCENDING)
-                    }.decodeList()
-                } catch (_: Exception) {
-                    emptyList()
-                }
+                statusHistories = loadStatusHistory()
 
                 render()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 android.util.Log.e("StaffDetail", "Error loading order details", e)
+                Toast.makeText(this@StaffDetailProduksiActivity, "Gagal memuat pesanan. Buka kembali dari antrean.", Toast.LENGTH_LONG).show()
+                finish()
             }
         }
     }
 
+    private suspend fun loadStatusHistory(): List<OrderStatusHistoryDto> = try {
+        supabase.postgrest["order_status_history"].select {
+            filter { eq("order_id", orderId) }
+            order("created_at", Order.ASCENDING)
+        }.decodeList()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        emptyList()
+    }
+
     private fun render() {
         when (currentStatus.uppercase()) {
-            "PREPARING", "BREWING", "DIBUAT" -> renderPreparingState()
-            "READY", "SIAP" -> renderReadyState()
+            "PREPARING" -> renderPreparingState()
+            "READY" -> renderReadyState()
             "COMPLETED" -> renderCompletedState()
-            else -> renderPaidState()
+            "PAID", "ACCEPTED" -> renderPaidState()
+            else -> finish()
         }
     }
 
@@ -226,13 +235,15 @@ class StaffDetailProduksiActivity : AppCompatActivity() {
         val btnPrimary = findViewById<AppCompatButton>(R.id.btnStaffActionPrimary)
         val btnSecondary = findViewById<AppCompatButton>(R.id.btnStaffActionSecondary)
 
-        btnPrimary.text = "Mulai racik (PREPARING)"
+        val nextStatus = if (currentStatus == "PAID") "ACCEPTED" else "PREPARING"
+        btnPrimary.text = if (nextStatus == "ACCEPTED") "Terima pesanan (ACCEPTED)" else "Mulai racik (PREPARING)"
         btnPrimary.setOnClickListener {
             btnPrimary.isEnabled = false
-            updateStatusTo("PREPARING") { success ->
+            updateStatusTo(nextStatus) { success ->
                 btnPrimary.isEnabled = true
                 if (success) {
-                    Toast.makeText(this@StaffDetailProduksiActivity, "Pesanan #$publicId mulai diracik", Toast.LENGTH_SHORT).show()
+                    val action = if (nextStatus == "ACCEPTED") "diterima" else "mulai diracik"
+                    Toast.makeText(this@StaffDetailProduksiActivity, "Pesanan #$publicId $action", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -425,79 +436,26 @@ class StaffDetailProduksiActivity : AppCompatActivity() {
                 container.addView(row)
             }
         } else {
-            // Tampilan default jika belum ada row riwayat
-            val defaultTimes = listOf(
-                formatTime(paidAtIso ?: createdAtIso) to "PAID · otomatis",
-                formatTime(updatedAtIso ?: paidAtIso) to "PREPARING · staf"
-            )
-            defaultTimes.forEach { (time, desc) ->
-                val row = LinearLayout(this).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                    setPadding(0, 8, 0, 8)
-                }
-                val tvTime = TextView(this).apply {
-                    layoutParams = LinearLayout.LayoutParams(160, ViewGroup.LayoutParams.WRAP_CONTENT)
-                    text = time
-                    textSize = 12f
-                    setTextColor(ContextCompat.getColor(this@StaffDetailProduksiActivity, R.color.ngopi_muted))
-                }
-                val tvDesc = TextView(this).apply {
-                    layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-                    text = desc
-                    textSize = 12f
-                    setTypeface(typeface, android.graphics.Typeface.BOLD)
-                    setTextColor(
-                        if (desc.contains("PREPARING"))
-                            ContextCompat.getColor(this@StaffDetailProduksiActivity, R.color.ngopi_primary)
-                        else
-                            ContextCompat.getColor(this@StaffDetailProduksiActivity, R.color.ngopi_ink)
-                    )
-                }
-                row.addView(tvTime)
-                row.addView(tvDesc)
-                container.addView(row)
-            }
+            container.addView(TextView(this).apply { text = "Riwayat status belum tersedia" })
         }
     }
 
     private fun updateStatusTo(newStatus: String, onComplete: (Boolean) -> Unit) {
         lifecycleScope.launch {
             try {
-                val nowIso = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
-                    timeZone = TimeZone.getTimeZone("UTC")
-                }.format(Date())
-
-                supabase.postgrest["customer_order"].update(
-                    OrderStatusUpdateDto(status = newStatus, updatedAt = nowIso)
-                ) {
-                    filter {
-                        eq("id", orderId)
-                    }
-                }
-
-                // Catat riwayat status secara best-effort
-                try {
-                    val currentUser = supabase.auth.currentUserOrNull()
-                    supabase.postgrest["order_status_history"].insert(
-                        buildJsonObject {
-                            put("order_id", orderId)
-                            if (currentUser != null) put("actor_uid", currentUser.id)
-                            put("actor_type", "STAFF")
-                            put("from_status", currentStatus)
-                            put("to_status", newStatus)
-                            put("note", "Diperbarui oleh barista")
-                        }
-                    )
-                } catch (_: Exception) {}
-
-                currentStatus = newStatus
-                updatedAtIso = nowIso
+                val result = transitionOrder(orderId, currentStatus, newStatus, "Diperbarui oleh barista")
+                currentStatus = result.status
+                updatedAtIso = result.updatedAt
+                statusHistories = loadStatusHistory()
                 render()
                 onComplete(true)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 android.util.Log.e("StaffDetail", "Gagal memperbarui status order", e)
                 Toast.makeText(this@StaffDetailProduksiActivity, "Gagal memperbarui status: ${e.localizedMessage ?: "Kesalahan server"}", Toast.LENGTH_LONG).show()
                 onComplete(false)
+                loadDataFromSupabase()
             }
         }
     }
@@ -550,16 +508,16 @@ class StaffDetailProduksiActivity : AppCompatActivity() {
 
         val timeStr = formatTime(paidAtIso ?: createdAtIso)
         val displayName = customerName.ifBlank { "Pelanggan" }
-        val msg = WhatsAppBotService.buildCompletedReceiptText(
-            orderNumber = publicId.ifBlank { orderId.take(8) },
-            tableLabel = tableLabel,
-            paidAtTime = timeStr,
-            customerName = displayName,
-            itemsSummary = itemsSummary,
-            totalRp = totalRp,
-        )
-
         CoroutineScope(Dispatchers.IO).launch {
+            val msg = WhatsAppBotService.buildCompletedReceiptText(
+                orderNumber = publicId.ifBlank { orderId.take(8) },
+                tableLabel = tableLabel,
+                paidAtTime = timeStr,
+                customerName = displayName,
+                itemsSummary = itemsSummary,
+                totalRp = totalRp,
+                template = WhatsAppBotService.loadReceiptTemplate("COMPLETED"),
+            )
             val result = WhatsAppBotService.sendTextMessage(
                 rawPhone = customerPhone,
                 message = msg,

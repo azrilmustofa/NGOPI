@@ -392,4 +392,7 @@
     <string name="staff_history_status_done">SELESAI</string>
     <string name="staff_history_status_cancelled">DIBATALKAN</string>
     <string name="staff_history_see_detail">Lihat rincian</string>
+    <string name="err_receipt_load_failed">Gagal memuat struk. Pastikan pesanan sudah lunas dan Anda masuk sebagai kasir atau admin.</string>
+    <string name="err_receipt_send_failed">Struk belum dapat dikirim. Muat ulang untuk memeriksa status pesanan dan koneksi.</string>
+    <string name="err_help_failed">Permintaan bantuan belum dapat dikirim. Periksa koneksi lalu coba lagi.</string>
 </resources>

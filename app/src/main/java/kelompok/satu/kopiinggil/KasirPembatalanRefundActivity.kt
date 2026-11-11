@@ -12,12 +12,6 @@ import androidx.lifecycle.lifecycleScope
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
 
 class KasirPembatalanRefundActivity : AppCompatActivity() {
 
@@ -71,6 +65,7 @@ class KasirPembatalanRefundActivity : AppCompatActivity() {
         }
 
         loadActorName()
+        loadRefundStatus()
     }
 
     private fun loadActorName() {
@@ -113,50 +108,59 @@ class KasirPembatalanRefundActivity : AppCompatActivity() {
 
     private fun processCancellation(reason: String) {
         btnConfirmCancel.isEnabled = false
-        Toast.makeText(this, "Memproses pembatalan pesanan...", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Membatalkan pesanan dan memproses refund...", Toast.LENGTH_SHORT).show()
 
         lifecycleScope.launch {
             try {
-                val nowIso = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
-                    timeZone = TimeZone.getTimeZone("UTC")
-                }.format(Date())
-
-                // 1. Update customer_order status ke CANCELLED
-                supabase.postgrest["customer_order"].update(
-                    buildJsonObject {
-                        put("status", "CANCELLED")
-                        put("updated_at", nowIso)
-                    }
-                ) {
-                    filter { eq("id", orderId) }
-                }
-
-                // 2. Insert riwayat pembatalan ke order_status_history
-                try {
-                    val currentUser = supabase.auth.currentUserOrNull()
-                    supabase.postgrest["order_status_history"].insert(
-                        buildJsonObject {
-                            put("order_id", orderId)
-                            if (currentUser != null) put("actor_uid", currentUser.id)
-                            put("actor_type", "KASIR")
-                            put("from_status", currentStatus)
-                            put("to_status", "CANCELLED")
-                            put("note", "Pembatalan oleh kasir: $reason")
-                        }
-                    )
-                } catch (_: Exception) {}
-
-                tvRefundStatus.text = "Dibatalkan oleh Kasir"
-                Toast.makeText(this@KasirPembatalanRefundActivity, "Pesanan #${publicId.ifBlank { orderId.take(8) }} berhasil dibatalkan", Toast.LENGTH_LONG).show()
-
+                val refund = OrderManager.refundOrder(orderId, currentStatus, reason)
+                currentStatus = refund.orderStatus
+                renderRefund(refund)
                 setResult(RESULT_OK)
-                finish()
-
+                Toast.makeText(
+                    this@KasirPembatalanRefundActivity,
+                    if (refund.refundStatus == "REFUNDED") "Pesanan dibatalkan dan refund berhasil" else "Pesanan berhasil dibatalkan",
+                    Toast.LENGTH_LONG,
+                ).show()
             } catch (e: Exception) {
-                btnConfirmCancel.isEnabled = true
-                Toast.makeText(this@KasirPembatalanRefundActivity, "Gagal membatalkan: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                currentStatus = "CANCELLED"
+                val saved = runCatching { loadOrderRefund(orderId) }.getOrNull()
+                if (saved != null) {
+                    renderRefund(saved)
+                    setResult(RESULT_OK)
+                    Toast.makeText(
+                        this@KasirPembatalanRefundActivity,
+                        "Pesanan dibatalkan, tetapi refund belum berhasil: ${e.localizedMessage}",
+                        Toast.LENGTH_LONG,
+                    ).show()
+                } else {
+                    btnConfirmCancel.isEnabled = true
+                    Toast.makeText(this@KasirPembatalanRefundActivity, "Gagal membatalkan: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                }
             }
         }
+    }
+
+    private fun loadRefundStatus() {
+        lifecycleScope.launch {
+            runCatching { loadOrderRefund(orderId) }.getOrNull()?.let {
+                currentStatus = it.orderStatus
+                renderRefund(it)
+            }
+        }
+    }
+
+    private fun renderRefund(refund: RefundResult) {
+        tvRefundStatus.text = when (refund.refundStatus) {
+            "REFUNDED" -> "Selesai${refund.providerReference?.let { " · $it" }.orEmpty()}"
+            "PROCESSING", "REQUESTED" -> "Sedang diproses Midtrans"
+            "FAILED" -> "Gagal · perlu dicoba lagi"
+            "MANUAL_REQUIRED" -> "Perlu dikembalikan secara tunai"
+            "NOT_REQUIRED" -> "Tidak diperlukan"
+            else -> refund.refundStatus
+        }
+        val retry = refund.refundStatus == "FAILED"
+        btnConfirmCancel.isEnabled = retry
+        btnConfirmCancel.text = if (retry) "Coba Refund Lagi" else "Pembatalan tercatat"
     }
 
     companion object {

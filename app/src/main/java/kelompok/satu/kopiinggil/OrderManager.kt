@@ -94,6 +94,13 @@ private data class RetryPaymentResult(
 )
 
 @Serializable
+private data class RefundOrderParams(
+    @SerialName("order_id") val orderId: String,
+    @SerialName("expected_status") val expectedStatus: String,
+    val reason: String,
+)
+
+@Serializable
 private data class ItemParam(
     @SerialName("menu_item_id") val menuItemId: String,
     val quantity: Int,
@@ -353,6 +360,16 @@ object OrderManager {
                 pendingPayment = null
                 PaymentResume.Closed(result.message)
             }
+        }
+    }
+
+    suspend fun refundOrder(orderId: String, expectedStatus: String, reason: String): RefundResult {
+        val raw = callFunction("refund-order", json.encodeToString(RefundOrderParams(orderId, expectedStatus, reason)))
+        return try {
+            json.decodeFromString(raw)
+        } catch (e: SerializationException) {
+            android.util.Log.e("OrderManager", "Respons refund-order tidak sesuai: $raw", e)
+            throw PaymentException("Respons server refund tidak sesuai")
         }
     }
 

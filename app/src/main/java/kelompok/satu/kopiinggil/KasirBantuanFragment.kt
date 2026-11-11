@@ -16,7 +16,8 @@ class KasirBantuanFragment : Fragment(R.layout.fragment_kasir_bantuan) {
         }
 
         view.findViewById<View>(R.id.cardKasirActionKirimStruk).setOnClickListener {
-            startActivity(Intent(requireContext(), KasirStrukWaActivity::class.java))
+            (activity as? KasirHomeActivity)?.selectTransaksiTab("LUNAS")
+            android.widget.Toast.makeText(requireContext(), "Pilih pesanan lunas untuk kirim ulang struk", android.widget.Toast.LENGTH_LONG).show()
         }
 
         view.findViewById<View>(R.id.cardKasirActionCancelRefund).setOnClickListener {

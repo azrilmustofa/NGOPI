@@ -8,10 +8,12 @@ import {
   Users,
   Settings,
   LogOut,
+  BarChart3,
+  History,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-export type NavTab = 'dashboard' | 'orders' | 'menu' | 'promos' | 'tables' | 'staff' | 'settings';
+export type NavTab = 'dashboard' | 'orders' | 'menu' | 'promos' | 'tables' | 'staff' | 'settings' | 'reports' | 'audit';
 
 interface SidebarProps {
   currentTab: NavTab;
@@ -59,10 +61,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, order
       label: 'Pengaturan',
       icon: <Settings className="w-5 h-5" />,
     },
+    { id: 'reports', label: 'Laporan Penjualan', icon: <BarChart3 className="w-5 h-5" /> },
+    { id: 'audit', label: 'Log Audit', icon: <History className="w-5 h-5" /> },
   ];
 
   return (
-    <aside className="w-64 bg-stone-900 text-stone-200 flex flex-col flex-shrink-0 min-h-screen border-r border-stone-800">
+    <aside className="w-full md:w-64 bg-stone-900 text-stone-200 flex flex-col flex-shrink-0 md:min-h-screen border-r border-stone-800">
       {/* Brand */}
       <div className="p-6 border-b border-stone-800 flex items-center gap-3">
         <img
@@ -77,8 +81,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, order
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
-        <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-stone-400">
+      <nav aria-label="Navigasi admin" className="flex gap-2 overflow-x-auto p-4 md:block md:flex-1 md:space-y-1.5 md:overflow-y-auto">
+        <div className="hidden px-3 py-2 text-xs font-semibold uppercase tracking-wider text-stone-400 md:block">
           Menu Utama
         </div>
         {navItems.map((item) => {
@@ -87,9 +91,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, order
             <button
               key={item.id}
               onClick={() => onSelectTab(item.id)}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              aria-current={isActive ? 'page' : undefined}
+              className={`w-auto shrink-0 md:w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 isActive
-                  ? 'bg-amber-600 text-white shadow-sm'
+                  ? 'bg-amber-800 text-white shadow-sm'
                   : 'text-stone-300 hover:bg-stone-800 hover:text-white'
               }`}
             >

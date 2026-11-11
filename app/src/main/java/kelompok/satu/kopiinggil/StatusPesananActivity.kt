@@ -9,7 +9,6 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.annotation.LayoutRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -96,7 +95,10 @@ class StatusPesananActivity : AppCompatActivity() {
             findViewById<TextView>(R.id.tvOrderSummaryTotal).text = order.total.toRupiah()
             findViewById<View>(R.id.btnOrderAgain).setOnClickListener { backToHome(R.id.nav_menu) }
             findViewById<View>(R.id.btnCallCashier).setOnClickListener {
-                Toast.makeText(this, R.string.invalid_call_cashier_todo, Toast.LENGTH_SHORT).show()
+                startActivity(android.content.Intent(this, BantuanActivity::class.java).apply {
+                    putExtra(BantuanActivity.EXTRA_TABLE_ID, CartManager.tableId)
+                    putExtra(BantuanActivity.EXTRA_ORDER_PUBLIC_ID, order.number)
+                })
             }
             findViewById<View>(R.id.cardReceipt).isClickable = false
             findViewById<TextView>(R.id.tvReceiptNote).text =

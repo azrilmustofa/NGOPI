@@ -200,7 +200,7 @@ class KasirTransaksiFragment : Fragment(R.layout.fragment_kasir_transaksi) {
             val status = data.dto.status.uppercase()
             when (selectedFilter) {
                 "TERTUNDA" -> status in listOf("AWAITING_PAYMENT", "PENDING", "")
-                "LUNAS" -> status in listOf("PAID", "ACCEPTED", "PREPARING", "READY", "COMPLETED")
+                "LUNAS" -> status in RECEIPT_STATUSES
                 "BATAL" -> status == "CANCELLED"
                 else -> true
             }
