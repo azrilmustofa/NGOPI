@@ -1,5 +1,7 @@
 <resources>
     <string name="app_name">Kopi Inggil</string>
+    <string name="push_channel_orders">Pesanan</string>
+    <string name="push_channel_orders_description">Pembaruan pembayaran dan proses pesanan</string>
 
     <string name="cd_scan">Pindai QR</string>
     <string name="welcome_label">SELAMAT DATANG</string>

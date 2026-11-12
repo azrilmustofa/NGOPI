@@ -89,6 +89,7 @@ class ProfilFragment : Fragment(R.layout.fragment_profil) {
                 .setPositiveButton("Keluar") { _, _ ->
                     lifecycleScope.launch {
                         try {
+                            PushNotifications.unregister(requireContext())
                             supabase.auth.signOut()
                         } catch (_: Exception) {
                         }

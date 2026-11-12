@@ -63,6 +63,9 @@ class HomeActivity : AppCompatActivity() {
             showTab(tag)
             true
         }
+        if (!assistedMode && intent.getBooleanExtra(EXTRA_OPEN_ORDERS, false)) {
+            bottomNav.selectedItemId = R.id.nav_orders
+        }
 
         updateCartBadge()
     }
@@ -122,6 +125,7 @@ class HomeActivity : AppCompatActivity() {
         const val EXTRA_TABLE = "extra_table"
         const val EXTRA_TABLE_ID = "extra_table_id"
         const val EXTRA_ASSISTED_ORDER = "extra_assisted_order"
+        const val EXTRA_OPEN_ORDERS = "extra_open_orders"
         private const val TAG_MENU = "tab_menu"
         private const val TAG_KERANJANG = "tab_keranjang"
         private const val TAG_PESANAN = "tab_pesanan"

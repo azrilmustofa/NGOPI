@@ -31,3 +31,16 @@ SQL `order_operations.sql` dan pembaruan `midtrans-webhook` sudah diterapkan ke 
 `verify_order_operations.sql` berhasil dijalankan pada database aktif. Urutan status, penolakan permintaan lama, pencatatan riwayat, akses struk kasir, dan penolakan akses struk barista lolos. Seluruh perubahan pemeriksaan dibatalkan dengan ROLLBACK. Tidak ada WhatsApp yang dikirim.
 
 APK baru tersedia di `app/build/outputs/apk/debug/app-debug.apk` dari root proyek. Pemasangan APK ke perangkat belum dilakukan pada penerapan server ini.
+
+## Notifikasi Firebase (No. 20)
+
+`push_notifications.sql` menyimpan token perangkat melalui RPC yang hanya dapat dipakai pemilik sesi, lalu membuat event saat status pesanan berubah. `functions/order-push` mengambil event sekali, memilih perangkat pelanggan atau barista aktif, dan mengirim data message FCM HTTP v1. Pesanan yang dibuat kasir untuk pelanggan tidak mengirim notifikasi pelanggan ke perangkat kasir.
+
+Penerapan server:
+
+1. Terapkan `push_notifications.sql` melalui SQL Editor.
+2. Atur secret Edge Function `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, dan `FIREBASE_PRIVATE_KEY` dari service-account JSON. Private key tidak boleh disimpan di Git.
+3. Deploy `functions/order-push/index.ts` dengan Verify JWT OFF.
+4. Buat Database Webhook untuk tabel `public.push_event`, event `INSERT`, tujuan Edge Function `order-push`, metode `POST`, timeout 1000 ms.
+
+Android meminta izin notifikasi pada Android 13+, mendaftarkan ulang token saat masuk, menghapus token saat keluar, dan membuka tab pesanan atau antrean staf saat notifikasi ditekan.

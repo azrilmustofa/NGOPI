@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "351404890421",
+    "project_id": "pttngopi",
+    "storage_bucket": "pttngopi.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:351404890421:android:b2a9469c9e4344aff2947c",
+        "android_client_info": {
+          "package_name": "kelompok.satu.kopiinggil"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBixltkaWCtxKDrty8YDUdrhy_fMe2uyKs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -10,6 +10,7 @@ class StaffHomeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_staff_home)
         applyEdgeToEdge(R.id.main)
+        initializePushNotifications()
 
         val bottomNav = findViewById<BottomNavigationView>(R.id.staffBottomNav)
 

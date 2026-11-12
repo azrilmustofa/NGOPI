@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+**/*firebase-adminsdk*.json
+**/*firebase-service-account*.json
+/supabase/.temp/

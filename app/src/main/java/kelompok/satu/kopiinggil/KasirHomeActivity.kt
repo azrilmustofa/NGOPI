@@ -11,6 +11,7 @@ class KasirHomeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_kasir_home)
         applyEdgeToEdge(R.id.main)
+        initializePushNotifications()
 
         val bottomNav = findViewById<BottomNavigationView>(R.id.kasirBottomNav)
 

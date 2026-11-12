@@ -115,7 +115,7 @@ class LoginActivity : AppCompatActivity() {
 
             // Bukan staf = pelanggan biasa, langsung ke alur pelanggan.
             if (staffList.isEmpty()) {
-                openMainAndClearStack()
+                openCustomerPushOrMain()
                 return
             }
 
@@ -166,12 +166,31 @@ class LoginActivity : AppCompatActivity() {
                     openMainAndClearStack()
                 }
                 else -> {
-                    openMainAndClearStack()
+                    openCustomerPushOrMain()
                 }
             }
         } catch (e: Exception) {
             android.util.Log.e("LoginActivity", "Error query staff_user", e)
             openMainAndClearStack()
         }
+    }
+
+    private fun openCustomerPushOrMain() {
+        if (intent.getStringExtra(EXTRA_PUSH_AUDIENCE) == "CUSTOMER") {
+            CartManager.unload()
+            OrderManager.clear()
+            startActivity(
+                Intent(this, HomeActivity::class.java)
+                    .putExtra(HomeActivity.EXTRA_OPEN_ORDERS, true)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            )
+        } else {
+            openMainAndClearStack()
+        }
+    }
+
+    companion object {
+        const val EXTRA_PUSH_AUDIENCE = "extra_push_audience"
+        const val EXTRA_PUSH_ORDER = "extra_push_order"
     }
 }
