@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.serialization)
@@ -11,6 +13,11 @@ android {
     }
 
     defaultConfig {
+        val localProperties = Properties().apply {
+            rootProject.file("local.properties").takeIf { it.isFile }?.inputStream()?.use { load(it) }
+        }
+        val wahaApiKey = localProperties.getProperty("waha.apiKey", "")
+
         applicationId = "kelompok.satu.kopiinggil"
         minSdk = 28
         targetSdk = 34
@@ -18,6 +25,11 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "WAHA_API_KEY", "\"$wahaApiKey\"")
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {

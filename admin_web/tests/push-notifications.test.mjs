@@ -74,6 +74,7 @@ function edgeFunction(event) {
   let handler;
   const requests = [];
   const completed = [];
+  const queries = [];
   const client = {
     async rpc(name, params) {
       if (name === 'claim_push_event') return { data: event, error: null };
@@ -87,6 +88,7 @@ function edgeFunction(event) {
         in(column, value) { state[column] = value; return query; }, delete() { state.deleting = true; return query; },
         maybeSingle() { state.single = true; return query; },
         then(resolve, reject) {
+          queries.push({ ...state });
           let result;
           if (table === 'customer_order') result = { data: { public_id: 'NG-PUSH' }, error: null };
           else if (table === 'staff_user') result = { data: [{ uid: barista }], error: null };
@@ -114,7 +116,7 @@ function edgeFunction(event) {
       return new Response('{"name":"message-id"}', { status: 200 });
     },
   });
-  return { handler, requests, completed };
+  return { handler, requests, completed, queries };
 }
 
 test('edge function sends an authenticated high-priority FCM message for the claimed event', async () => {
@@ -130,4 +132,13 @@ test('edge function sends an authenticated high-priority FCM message for the cla
     order_public_id: 'NG-PUSH', status: 'READY',
   });
   assert.equal(endpoint.completed.length, 1);
+});
+
+test('staff notifications target active baristas and cashiers', async () => {
+  const endpoint = edgeFunction({ id: 'event', order_id: 'order', user_id: null, audience: 'STAFF', status: 'PAID' });
+  const response = await endpoint.handler(new Request('https://example.test/order-push', {
+    method: 'POST', body: JSON.stringify({ record: { id: 'event' } }),
+  }));
+  assert.equal(response.status, 200);
+  assert.deepEqual(Array.from(endpoint.queries.find((query) => query.table === 'staff_user').role), ['BARISTA', 'CASHIER']);
 });

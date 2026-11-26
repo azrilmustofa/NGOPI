@@ -27,14 +27,8 @@ object WhatsAppBotService {
         encodeDefaults = true
     }
 
-    // Kandidat endpoint WAHA:
-    // 127.0.0.1:3000 (HP fisik via USB kabel: adb reverse tcp:3000 tcp:3000)
-    // 192.168.0.117:3000 (IP host Mac saat ini di Wi-Fi)
-    // 10.0.2.2:3000 (Emulator Android default)
     private val CANDIDATE_URLS = listOf(
-        "http://127.0.0.1:3000",
-        "http://192.168.0.117:3000",
-        "http://10.0.2.2:3000",
+        "https://inggilwaha.duckdns.org",
     )
 
     @Volatile
@@ -158,6 +152,9 @@ object WhatsAppBotService {
                     readTimeout = 8000
                     doOutput = true
                     setRequestProperty("Content-Type", "application/json")
+                    if (BuildConfig.WAHA_API_KEY.isNotBlank()) {
+                        setRequestProperty("X-Api-Key", BuildConfig.WAHA_API_KEY)
+                    }
                 }
                 conn.outputStream.use { it.write(payload.toByteArray(Charsets.UTF_8)) }
                 val code = conn.responseCode

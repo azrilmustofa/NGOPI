@@ -53,7 +53,7 @@ async function tokensFor(event: PushEvent): Promise<string[]> {
     if (devices.error) throw devices.error;
     return devices.data.map((device) => device.token as string);
   }
-  const staff = await admin.from("staff_user").select("uid").eq("is_active", true).eq("role", "BARISTA");
+  const staff = await admin.from("staff_user").select("uid").eq("is_active", true).in("role", ["BARISTA", "CASHIER"]);
   if (staff.error) throw staff.error;
   const ids = staff.data.map((user) => user.uid as string);
   if (!ids.length) return [];
